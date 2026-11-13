@@ -28,9 +28,15 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#F8FAF5"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "FoodLens uses your photos to identify a meal you choose.",
+          "cameraPermission": "FoodLens uses your camera to identify a meal.",
+          "microphonePermission": false
         }
       ]
     ],
