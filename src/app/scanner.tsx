@@ -125,20 +125,19 @@ export default function ScannerScreen() {
               className="h-full w-full"
             />
           ) : (
-            <View className="flex-1 items-center justify-center p-6">
-              <View className="h-28 w-28 items-center justify-center rounded-full border-[7px] border-[#E5E8DF] bg-[#F1F4ED]">
-                <View className="h-[78px] w-[78px] items-center justify-center rounded-full border border-[#D7DED4]">
-                  <View className="ml-[-12px] h-[33px] w-[33px] rounded-[18px] bg-[#E9B56F]" />
-                  <View className="absolute right-2 top-[7px] h-[38px] w-[25px] rotate-[30deg] rounded-[20px] bg-[#8BA47D]" />
-                </View>
+            <>
+              <StyledImage
+                source={require('../../assets/images/food-meal.jpg')}
+                contentFit="cover"
+                className="h-full w-full"
+              />
+              <View className="absolute bottom-3 left-3 right-3 rounded-[14px] bg-[#202820CC] px-4 py-[11px]">
+                <Text className="text-[15px] font-bold text-white">Your plate goes here</Text>
+                <Text className="mt-1 text-xs leading-[17px] text-[#E6EDE6]">
+                  Try to include the whole meal in the frame.
+                </Text>
               </View>
-              <Text className="mt-5 text-[15px] font-bold text-ink-light dark:text-ink-dark">
-                Your plate goes here
-              </Text>
-              <Text className="mt-[5px] text-center text-xs leading-[17px] text-muted-light dark:text-muted-dark">
-                Try to include the whole meal in the frame.
-              </Text>
-            </View>
+            </>
           )}
           {image ? (
             <Pressable

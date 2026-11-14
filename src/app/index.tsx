@@ -6,6 +6,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { DailyCalorieCard } from '@/components/food/DailyCalorieCard';
 import { BrandMark } from '@/components/food/BrandMark';
 import { FoodButton } from '@/components/food/FoodButton';
+import { StyledImage } from '@/components/nativewind-interop';
 import { DEFAULT_DAILY_GOAL } from '@/services/calorieTracking';
 import { useDailyCalories } from '@/stores/daily-calories';
 
@@ -123,20 +124,18 @@ export default function HomeScreen() {
             </View>
           ) : null}
 
-          <View className="mt-[25px] h-[190px] flex-row items-center justify-center gap-6 overflow-hidden rounded-[28px] bg-brand-primary">
-            <View className="h-[138px] w-[138px] items-center justify-center rounded-full bg-[#F6F1E4] shadow-lg">
-              <View className="h-[112px] w-[112px] items-center justify-center rounded-full border border-[#D9D4C9] bg-[#F1EBDD]">
-                <View className="absolute left-[18px] top-[21px] h-[53px] w-[41px] rotate-[-32deg] rounded-[30px] bg-[#85A873]" />
-                <View className="absolute right-[15px] top-[18px] h-[40px] w-[39px] rotate-[24deg] rounded-[30px] bg-brand-accent" />
-                <View className="absolute bottom-[17px] left-[32px] h-[35px] w-[52px] rotate-[-8deg] rounded-[30px] bg-[#E4C883]" />
-                <View className="absolute bottom-[19px] right-[23px] h-8 w-[19px] rotate-[32deg] rounded-[20px] bg-[#527C54]" />
-              </View>
-            </View>
-            <View className="max-w-[110px]">
+          <View className="mt-[25px] h-[190px] overflow-hidden rounded-[28px] bg-brand-primary">
+            <StyledImage
+              source={require('../../assets/images/food-meal.jpg')}
+              contentFit="cover"
+              className="h-full w-full"
+            />
+            <View className="absolute inset-0 bg-[#20282033]" />
+            <View className="absolute bottom-[14px] left-[14px] right-[14px] rounded-[16px] bg-[#202820CC] px-[14px] py-[11px]">
               <Text className="text-[17px] font-bold leading-[22px] text-white">
                 A little more mindful
               </Text>
-              <Text className="mt-[7px] text-xs text-[#DCEBDD]">One meal at a time</Text>
+              <Text className="mt-[4px] text-xs text-[#DCEBDD]">One meal at a time</Text>
             </View>
           </View>
 
