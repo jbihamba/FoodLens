@@ -8,7 +8,11 @@
     "scheme": "foodlens",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "com.josephbihamba.foodlens",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -28,15 +32,31 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
-          "image": "./assets/images/splash-icon.png",
-          "imageWidth": 76
+          "backgroundColor": "#F8FAF5"
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "FoodLens uses your photos to identify a meal you choose.",
+          "cameraPermission": "FoodLens uses your camera to identify a meal.",
+          "microphonePermission": false
         }
       ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {
+        "asyncRoutes": {
+          "web": true
+        }
+      },
+      "eas": {
+        "projectId": "1aac1a51-12f6-45ae-9e2d-76326545d3e5"
+      }
     }
   }
 }

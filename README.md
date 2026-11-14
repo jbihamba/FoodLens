@@ -1,56 +1,46 @@
-# Welcome to your Expo app 👋
+# FoodLens
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+FoodLens is an Expo / React Native app that estimates the foods and calories in a meal photo. Calorie and portion values are approximate and may vary with ingredients, serving size, and preparation.
 
-## Get started
+## Mobile app
 
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **src/app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```sh
+npm install
+cp .env.example .env
 ```
 
-This command will move the starter code to the **example** directory and create a blank **src/app** directory where you can start developing.
+Set `EXPO_PUBLIC_FOODLENS_API_URL` in the root `.env` to the reachable API address (the local API listens on port `3001`). For a physical phone, use your computer's LAN IP; Android emulators generally reach the host computer at `10.0.2.2`. Do not put an AI provider key in this file.
 
-### Other setup steps
+```sh
+npx expo start
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+The app uses Expo Router for a home → scanner → result flow. Camera capture, gallery selection, and JPEG resizing use the SDK-compatible Expo ImagePicker and ImageManipulator packages.
 
-## Learn more
+## Recognition API
 
-To learn more about developing your project with Expo, look at the following resources:
+The separate TypeScript API forwards validated meal photos to Google's Gemini API using the `gemini-3.1-flash-lite` model by default. It requires Node.js 20.6+ and does not store images or require a database.
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```sh
+cd server
+npm install
+cp .env.example .env
+```
 
-## Join the community
+Set `GEMINI_API_KEY` in `server/.env` (or as a server environment secret), then run the API in a separate terminal:
 
-Join our community of developers creating universal apps.
+```sh
+npm run dev
+```
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+The app sends a compressed JPEG as base64 JSON to `POST /v1/food/analyze`. The API validates the image, rate-limits requests per process, requests schema-constrained model output, and returns a friendly error for images without recognizable food. The `GET /health` endpoint can be used to check server availability.
+
+For deployment, configure `GEMINI_API_KEY` as a secret, set `EXPO_PUBLIC_FOODLENS_API_URL` to the public API origin, and configure an edge/host-level rate limit. The included process-level limit is useful for local development but is not shared between server instances. Google processes submitted photos under its service terms.
+
+## Checks
+
+```sh
+npx expo lint
+npx tsc --noEmit
+cd server && npm run typecheck && npm test
+```
