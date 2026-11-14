@@ -1,22 +1,18 @@
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  type PressableProps,
-  type StyleProp,
-  type ViewStyle,
-} from 'react-native';
+import { Pressable, Text, View, type PressableProps } from 'react-native';
 
-import { BrandColors } from '@/constants/theme';
-
-type FoodButtonProps = Omit<PressableProps, 'style'> & {
+type FoodButtonProps = Omit<PressableProps, 'style' | 'className'> & {
   label: string;
   hint?: string;
   variant?: 'primary' | 'secondary' | 'outline';
   trailing?: string;
-  style?: StyleProp<ViewStyle>;
+  className?: string;
 };
+
+const variantClasses = {
+  primary: 'bg-brand-primary',
+  secondary: 'bg-brand-secondary',
+  outline: 'border border-brand-border bg-transparent',
+} as const;
 
 export function FoodButton({
   label,
@@ -24,102 +20,34 @@ export function FoodButton({
   variant = 'primary',
   trailing,
   disabled,
-  style,
+  className,
   ...props
 }: FoodButtonProps) {
+  const isPrimary = variant === 'primary';
+  const textClassName = isPrimary ? 'text-white' : 'text-brand-primary';
+
   return (
     <Pressable
       accessibilityRole="button"
       disabled={disabled}
-      style={({ pressed }) => [
-        styles.button,
-        styles[variant],
-        disabled && styles.disabled,
-        pressed && !disabled && styles.pressed,
-        style,
-      ]}
+      className={`min-h-[58px] flex-row items-center justify-between gap-3 rounded-[18px] px-5 py-[14px] active:scale-[0.99] active:opacity-[0.86] disabled:opacity-[0.55] ${variantClasses[variant]} ${className ?? ''}`}
       {...props}>
-      <View style={styles.copy}>
-        <Text style={[styles.label, variant === 'primary' ? styles.lightText : styles.darkText]}>
-          {label}
-        </Text>
+      <View className="flex-1 gap-[2px]">
+        <Text className={`text-base font-bold leading-[21px] ${textClassName}`}>{label}</Text>
         {hint ? (
           <Text
-            style={[
-              styles.hint,
-              variant === 'primary' ? styles.lightHint : styles.darkHint,
-            ]}>
+            className={`text-xs leading-[17px] ${
+              isPrimary ? 'text-[#DCEBDD]' : 'text-[#52705D]'
+            }`}>
             {hint}
           </Text>
         ) : null}
       </View>
       {trailing ? (
-        <Text
-          aria-hidden
-          style={[styles.trailing, variant === 'primary' ? styles.lightText : styles.darkText]}>
+        <Text aria-hidden className={`text-xl font-semibold ${textClassName}`}>
           {trailing}
         </Text>
       ) : null}
     </Pressable>
   );
 }
-
-const styles = StyleSheet.create({
-  button: {
-    minHeight: 58,
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderRadius: 18,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 12,
-  },
-  primary: {
-    backgroundColor: BrandColors.primary,
-  },
-  secondary: {
-    backgroundColor: BrandColors.secondary,
-  },
-  outline: {
-    backgroundColor: 'transparent',
-    borderWidth: 1,
-    borderColor: BrandColors.border,
-  },
-  copy: {
-    flex: 1,
-    gap: 2,
-  },
-  label: {
-    fontSize: 16,
-    lineHeight: 21,
-    fontWeight: '700',
-  },
-  hint: {
-    fontSize: 12,
-    lineHeight: 17,
-  },
-  lightText: {
-    color: BrandColors.white,
-  },
-  darkText: {
-    color: BrandColors.primary,
-  },
-  lightHint: {
-    color: '#DCEBDD',
-  },
-  darkHint: {
-    color: '#52705D',
-  },
-  trailing: {
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  disabled: {
-    opacity: 0.55,
-  },
-  pressed: {
-    opacity: 0.86,
-    transform: [{ scale: 0.99 }],
-  },
-});

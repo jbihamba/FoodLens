@@ -16,6 +16,7 @@ npx expo start
 ```
 
 The app uses Expo Router for a home → scanner → result flow. Camera capture, gallery selection, and JPEG resizing use the SDK-compatible Expo ImagePicker and ImageManipulator packages.
+The interface uses NativeWind/Tailwind utility classes across iOS, Android, and web; web bundling is configured to use Metro.
 
 ## Recognition API
 

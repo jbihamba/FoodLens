@@ -1,57 +1,39 @@
-import { StyleSheet, View } from 'react-native';
+import { View } from 'react-native';
 
-import { BrandColors } from '@/constants/theme';
+const sizeClasses = {
+  44: {
+    mark: 'h-11 w-11',
+    plate: 'h-[25.5px] w-[25.5px]',
+    center: 'h-[13.5px] w-[13.5px]',
+  },
+  34: {
+    mark: 'h-[34px] w-[34px]',
+    plate: 'h-[19.7px] w-[19.7px]',
+    center: 'h-[10.5px] w-[10.5px]',
+  },
+  28: {
+    mark: 'h-7 w-7',
+    plate: 'h-[16.2px] w-[16.2px]',
+    center: 'h-[8.7px] w-[8.7px]',
+  },
+  26: {
+    mark: 'h-[26px] w-[26px]',
+    plate: 'h-[15.1px] w-[15.1px]',
+    center: 'h-[8.1px] w-[8.1px]',
+  },
+} as const;
 
-export function BrandMark({ size = 44 }: { size?: number }) {
+export function BrandMark({ size = 44 }: { size?: keyof typeof sizeClasses }) {
+  const classes = sizeClasses[size];
+
   return (
     <View
       accessibilityLabel="FoodLens"
-      style={[
-        styles.mark,
-        {
-          width: size,
-          height: size,
-          borderRadius: size / 2,
-        },
-      ]}>
+      className={`items-center justify-center rounded-full bg-brand-primary ${classes.mark}`}>
       <View
-        style={[
-          styles.plate,
-          {
-            width: size * 0.58,
-            height: size * 0.58,
-            borderRadius: size,
-          },
-        ]}>
-        <View
-          style={[
-            styles.plateCenter,
-            {
-              width: size * 0.31,
-              height: size * 0.31,
-              borderRadius: size,
-            },
-          ]}
-        />
+        className={`items-center justify-center rounded-full border-[1.5px] border-[#B9D2C2] ${classes.plate}`}>
+        <View className={`rounded-full border-[1.5px] border-[#B9D2C2] ${classes.center}`} />
       </View>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  mark: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: BrandColors.primary,
-  },
-  plate: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1.5,
-    borderColor: '#B9D2C2',
-  },
-  plateCenter: {
-    borderWidth: 1.5,
-    borderColor: '#B9D2C2',
-  },
-});
