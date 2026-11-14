@@ -1,6 +1,6 @@
 import type { FoodAnalysis } from '@/types/food';
 
-const API_URL = process.env.EXPO_PUBLIC_FOODLENS_API_URL?.replace(/\/+$/, '');
+const API_URL = process.env.EXPO_PUBLIC_FOODLENS_API_URL?.trim().replace(/\/+$/, '');
 
 type RecognitionErrorCode =
   | 'configuration'

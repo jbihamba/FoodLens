@@ -108,9 +108,9 @@ export function createAppServer() {
       }
       decodeJpegBase64(imageBase64);
 
-      const apiKey = process.env.OPENAI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        console.error('[food-recognition] OPENAI_API_KEY is not configured.');
+        console.error('[food-recognition] GEMINI_API_KEY is not configured.');
         sendJson(response, 503, {
           error: {
             code: 'service_unavailable',
@@ -120,7 +120,7 @@ export function createAppServer() {
         return;
       }
 
-      const model = process.env.OPENAI_MODEL?.trim() || undefined;
+      const model = process.env.GEMINI_MODEL?.trim() || undefined;
       const analysis = await recognizeFood(imageBase64, apiKey, model);
       sendJson(response, 200, { analysis });
     } catch (error) {

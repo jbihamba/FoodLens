@@ -1,5 +1,6 @@
-const OPENAI_RESPONSES_URL = 'https://api.openai.com/v1/responses';
-const DEFAULT_MODEL = 'gpt-6-luna';
+const GEMINI_GENERATE_CONTENT_URL =
+  'https://generativelanguage.googleapis.com/v1beta/models';
+const DEFAULT_MODEL = 'gemini-3.8-flash';
 const MAX_IMAGE_BASE64_LENGTH = 6_000_000;
 
 export interface FoodAnalysis {
@@ -90,34 +91,30 @@ function extractOutputText(response: unknown): string | null {
     return null;
   }
 
-  const output = (response as { output?: unknown }).output;
-  if (!Array.isArray(output)) {
+  const candidates = (response as { candidates?: unknown }).candidates;
+  if (!Array.isArray(candidates)) {
     return null;
   }
 
-  for (const item of output) {
-    if (!item || typeof item !== 'object') {
+  for (const candidate of candidates) {
+    if (!candidate || typeof candidate !== 'object') {
       continue;
     }
-    const content = (item as { content?: unknown }).content;
-    if (!Array.isArray(content)) {
+    const content = (candidate as { content?: unknown }).content;
+    if (!content || typeof content !== 'object') {
       continue;
     }
-    for (const part of content) {
+    const parts = (content as { parts?: unknown }).parts;
+    if (!Array.isArray(parts)) {
+      continue;
+    }
+    for (const part of parts) {
       if (
         part &&
         typeof part === 'object' &&
-        (part as { type?: unknown }).type === 'output_text' &&
         typeof (part as { text?: unknown }).text === 'string'
       ) {
         return (part as { text: string }).text;
-      }
-      if (
-        part &&
-        typeof part === 'object' &&
-        (part as { type?: unknown }).type === 'refusal'
-      ) {
-        return null;
       }
     }
   }
@@ -125,24 +122,18 @@ function extractOutputText(response: unknown): string | null {
 }
 
 const foodSchema = {
-  type: 'object',
+  type: 'OBJECT',
   properties: {
-    isFood: { type: 'boolean' },
-    foodName: { type: 'string' },
-    description: { type: 'string' },
-    estimatedCalories: {
-      anyOf: [{ type: 'integer' }, { type: 'null' }],
-    },
-    portionSize: {
-      anyOf: [{ type: 'string' }, { type: 'null' }],
-    },
+    isFood: { type: 'BOOLEAN' },
+    foodName: { type: 'STRING' },
+    description: { type: 'STRING' },
+    estimatedCalories: { type: 'INTEGER', nullable: true },
+    portionSize: { type: 'STRING', nullable: true },
     ingredients: {
-      type: 'array',
-      items: { type: 'string' },
+      type: 'ARRAY',
+      items: { type: 'STRING' },
     },
-    confidence: {
-      anyOf: [{ type: 'number' }, { type: 'null' }],
-    },
+    confidence: { type: 'NUMBER', nullable: true },
   },
   required: [
     'isFood',
@@ -153,7 +144,6 @@ const foodSchema = {
     'ingredients',
     'confidence',
   ],
-  additionalProperties: false,
 };
 
 export async function recognizeFood(
@@ -165,50 +155,50 @@ export async function recognizeFood(
 
   let response: Response;
   try {
-    response = await fetch(OPENAI_RESPONSES_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      signal: AbortSignal.timeout(55_000),
-      body: JSON.stringify({
-        model,
-        reasoning: { effort: 'low' },
-        input: [
-          {
-            role: 'system',
-            content:
-              'You analyze meal photos for a food diary. Report only foods clearly supported by the image. Never claim nutritional certainty. Estimate total calories for all recognizable meal components; if the portion or preparation is too unclear, use null for calories or portion size rather than inventing precision. List only identifiable main ingredients. Confidence is an approximate visual-match score from 0 to 1, not a calibrated probability. If no recognizable food is present, set isFood false, use empty foodName and ingredients, null calories, portion size, and confidence, and briefly explain in description.',
-          },
-          {
-            role: 'user',
-            content: [
+    response = await fetch(
+      `${GEMINI_GENERATE_CONTENT_URL}/${encodeURIComponent(model)}:generateContent`,
+      {
+        method: 'POST',
+        headers: {
+          'x-goog-api-key': apiKey,
+          'Content-Type': 'application/json',
+        },
+        signal: AbortSignal.timeout(55_000),
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [
               {
-                type: 'input_text',
-                text: 'Identify the meal and estimate its total energy and portion from this photo.',
-              },
-              {
-                type: 'input_image',
-                image_url: `data:image/jpeg;base64,${imageBase64}`,
-                detail: 'auto',
+                text:
+                  'You analyze meal photos for a food diary. Report only foods clearly supported by the image. Never claim nutritional certainty. Estimate total calories for all recognizable meal components; if the portion or preparation is too unclear, use null for calories or portion size rather than inventing precision. List only identifiable main ingredients. Confidence is an approximate visual-match score from 0 to 1, not a calibrated probability. If no recognizable food is present, set isFood false, use empty foodName and ingredients, null calories, portion size, and confidence, and briefly explain in description.',
               },
             ],
           },
-        ],
-        text: {
-          format: {
-            type: 'json_schema',
-            name: 'food_analysis',
-            strict: true,
-            schema: foodSchema,
+          contents: [
+            {
+              role: 'user',
+              parts: [
+                {
+                  text: 'Identify the meal and estimate its total energy and portion from this photo.',
+                },
+                {
+                  inlineData: {
+                    mimeType: 'image/jpeg',
+                    data: imageBase64,
+                  },
+                },
+              ],
+            },
+          ],
+          generationConfig: {
+            responseMimeType: 'application/json',
+            responseSchema: foodSchema,
+            maxOutputTokens: 800,
           },
-        },
-        max_output_tokens: 800,
-      }),
-    });
+        }),
+      },
+    );
   } catch {
-    console.error('[food-recognition] OpenAI request failed to connect.');
+    console.error('[food-recognition] Gemini request failed to connect.');
     throw new RecognitionError(
       'provider_error',
       502,
@@ -217,7 +207,20 @@ export async function recognizeFood(
   }
 
   if (!response.ok) {
-    console.error(`[food-recognition] OpenAI returned HTTP ${response.status}.`);
+    let providerMessage = '';
+    try {
+      const body = (await response.json()) as {
+        error?: { message?: unknown };
+      };
+      if (typeof body.error?.message === 'string') {
+        providerMessage = body.error.message.slice(0, 500);
+      }
+    } catch {
+      providerMessage = 'Gemini returned a non-JSON error body.';
+    }
+    console.error(
+      `[food-recognition] Gemini returned HTTP ${response.status}${providerMessage ? `: ${providerMessage}` : '.'}`,
+    );
     throw new RecognitionError(
       'provider_error',
       502,
@@ -229,7 +232,7 @@ export async function recognizeFood(
   try {
     providerResponse = await response.json();
   } catch {
-    console.error('[food-recognition] OpenAI returned an invalid response body.');
+    console.error('[food-recognition] Gemini returned an invalid response body.');
     throw new RecognitionError(
       'provider_error',
       502,

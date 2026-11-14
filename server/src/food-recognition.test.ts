@@ -33,14 +33,21 @@ test('returns validated structured analysis from the vision response', async () 
     confidence: 0.88,
   };
   globalThis.fetch = async (input, init) => {
-    assert.equal(input, 'https://api.openai.com/v1/responses');
-    assert.equal(new Headers(init?.headers).get('authorization'), 'Bearer test-key');
+    assert.equal(
+      input,
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',
+    );
+    assert.equal(new Headers(init?.headers).get('x-goog-api-key'), 'test-key');
+    const requestBody = JSON.parse(String(init?.body));
+    assert.equal(requestBody.generationConfig.responseMimeType, 'application/json');
+    assert.equal(requestBody.contents[0].parts[1].inlineData.data, jpegBase64);
     return new Response(
       JSON.stringify({
-        output: [
+        candidates: [
           {
-            type: 'message',
-            content: [{ type: 'output_text', text: JSON.stringify(result) }],
+            content: {
+              parts: [{ text: JSON.stringify(result) }],
+            },
           },
         ],
       }),
@@ -68,23 +75,23 @@ test('returns an explicit error for photos without recognizable food', async () 
   globalThis.fetch = async () =>
     new Response(
       JSON.stringify({
-        output: [
+        candidates: [
           {
-            type: 'message',
-            content: [
-              {
-                type: 'output_text',
-                text: JSON.stringify({
-                  isFood: false,
-                  foodName: '',
-                  description: 'No recognizable food is visible.',
-                  estimatedCalories: null,
-                  portionSize: null,
-                  ingredients: [],
-                  confidence: null,
-                }),
-              },
-            ],
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    isFood: false,
+                    foodName: '',
+                    description: 'No recognizable food is visible.',
+                    estimatedCalories: null,
+                    portionSize: null,
+                    ingredients: [],
+                    confidence: null,
+                  }),
+                },
+              ],
+            },
           },
         ],
       }),
