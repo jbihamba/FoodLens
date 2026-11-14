@@ -2,9 +2,12 @@ import '../global.css';
 
 import { useEffect } from 'react';
 import { Stack } from 'expo-router';
+import { SQLiteProvider } from 'expo-sqlite';
 import { Platform, useColorScheme } from 'react-native';
 import { useColorScheme as useNativeWindColorScheme } from 'nativewind';
 
+import { initializeCalorieDatabase } from '@/services/calorieTracking';
+import { DailyCaloriesProvider } from '@/stores/daily-calories';
 import { ScanSessionProvider } from '@/stores/scan-session';
 
 export default function RootLayout() {
@@ -18,12 +21,16 @@ export default function RootLayout() {
   }, [setColorScheme, systemColorScheme]);
 
   return (
-    <ScanSessionProvider>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-        }}
-      />
-    </ScanSessionProvider>
+    <SQLiteProvider databaseName="foodlens.db" onInit={initializeCalorieDatabase}>
+      <ScanSessionProvider>
+        <DailyCaloriesProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+            }}
+          />
+        </DailyCaloriesProvider>
+      </ScanSessionProvider>
+    </SQLiteProvider>
   );
 }

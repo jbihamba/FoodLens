@@ -1,9 +1,13 @@
-import { Link } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
+import { Link, useFocusEffect } from 'expo-router';
+import { useCallback } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { DailyCalorieCard } from '@/components/food/DailyCalorieCard';
 import { BrandMark } from '@/components/food/BrandMark';
 import { FoodButton } from '@/components/food/FoodButton';
+import { DEFAULT_DAILY_GOAL } from '@/services/calorieTracking';
+import { useDailyCalories } from '@/stores/daily-calories';
 
 const steps = [
   {
@@ -24,6 +28,15 @@ const steps = [
 ];
 
 export default function HomeScreen() {
+  const { goal, entries, isLoading, error, refresh } = useDailyCalories();
+  const consumed = entries.reduce((total, entry) => total + entry.calories, 0);
+
+  useFocusEffect(
+    useCallback(() => {
+      void refresh().catch(() => undefined);
+    }, [refresh]),
+  );
+
   return (
     <SafeAreaView className="flex-1 bg-canvas-light dark:bg-canvas-dark">
       <ScrollView
@@ -56,6 +69,60 @@ export default function HomeScreen() {
             Discover what&apos;s on your plate.
           </Text>
 
+          <DailyCalorieCard
+            goal={goal?.target_calories ?? DEFAULT_DAILY_GOAL}
+            consumed={consumed}
+            isLoading={isLoading || !goal}
+            entries={entries}
+          />
+          {error ? (
+            <Text accessibilityRole="alert" className="mt-2 text-xs text-[#A53F35]">
+              {error}
+            </Text>
+          ) : null}
+
+          {entries.length > 0 ? (
+            <View className="mt-[20px]">
+              <Text className="mb-[10px] text-[17px] font-bold text-ink-light dark:text-ink-dark">
+                Today&apos;s meals
+              </Text>
+              <View className="gap-2">
+                {entries.map((entry) => (
+                  <Link
+                    key={entry.id}
+                    href={{ pathname: '/entry', params: { id: String(entry.id) } }}
+                    asChild>
+                    <Pressable
+                      accessibilityRole="button"
+                      className="min-h-[63px] flex-row items-center justify-between rounded-[16px] border-[0.5px] border-selected-light bg-surface-light px-[15px] py-3 dark:border-selected-dark dark:bg-surface-dark">
+                      <View className="mr-3 flex-1">
+                        <Text
+                          numberOfLines={1}
+                          className="text-sm font-bold text-ink-light dark:text-ink-dark">
+                          {entry.food_name}
+                        </Text>
+                        <Text className="mt-1 text-[11px] text-muted-light dark:text-muted-dark">
+                          {entry.meal_type ?? 'Meal'} ·{' '}
+                          {new Date(entry.consumed_at).toLocaleTimeString([], {
+                            hour: 'numeric',
+                            minute: '2-digit',
+                          })}
+                        </Text>
+                      </View>
+                      <Text className="text-sm font-bold text-brand-primary dark:text-[#A8C8B2]">
+                        {entry.calories.toLocaleString()} kcal
+                      </Text>
+                    </Pressable>
+                  </Link>
+                ))}
+              </View>
+            </View>
+          ) : isLoading ? (
+            <View className="mt-4 min-h-8 flex-row items-center justify-center">
+              <ActivityIndicator size="small" color="#245C45" />
+            </View>
+          ) : null}
+
           <View className="mt-[25px] h-[190px] flex-row items-center justify-center gap-6 overflow-hidden rounded-[28px] bg-brand-primary">
             <View className="h-[138px] w-[138px] items-center justify-center rounded-full bg-[#F6F1E4] shadow-lg">
               <View className="h-[112px] w-[112px] items-center justify-center rounded-full border border-[#D9D4C9] bg-[#F1EBDD]">
@@ -79,6 +146,14 @@ export default function HomeScreen() {
                 label="Scan my food"
                 hint="Use your camera or choose a photo"
                 trailing="→"
+              />
+            </Link>
+            <Link href="/entry" asChild>
+              <FoodButton
+                label="Add a meal manually"
+                hint="Record a meal and calories without scanning"
+                variant="outline"
+                trailing="＋"
               />
             </Link>
           </View>

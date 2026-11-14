@@ -1,19 +1,28 @@
-import { Link, router, useLocalSearchParams } from 'expo-router';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Link, router, useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
-import { BrandMark } from '@/components/food/BrandMark';
-import { FoodButton } from '@/components/food/FoodButton';
-import { StyledImage } from '@/components/nativewind-interop';
-import { FoodRecognitionError, analyzeFoodImage } from '@/services/foodRecognition';
+import { BrandMark } from "@/components/food/BrandMark";
+import { FoodButton } from "@/components/food/FoodButton";
+import { StyledImage } from "@/components/nativewind-interop";
+import {
+  FoodRecognitionError,
+  analyzeFoodImage,
+} from "@/services/foodRecognition";
 import {
   ImageSelectionError,
   selectFoodImage,
   type ImageSource,
   type SelectedFoodImage,
-} from '@/services/imagePicker';
-import { useScanSession } from '@/stores/scan-session';
+} from "@/services/imagePicker";
+import { useScanSession } from "@/stores/scan-session";
 
 export default function ScannerScreen() {
   const params = useLocalSearchParams<{ source?: string }>();
@@ -34,21 +43,21 @@ export default function ScannerScreen() {
       setMessage(
         error instanceof ImageSelectionError
           ? error.message
-          : 'We could not open that image. Please try again.',
+          : "We could not open that image. Please try again.",
       );
     }
   }, []);
 
   useEffect(() => {
-    if (params.source === 'gallery' && !autoOpenedGallery.current) {
+    if (params.source === "gallery" && !autoOpenedGallery.current) {
       autoOpenedGallery.current = true;
-      void chooseImage('gallery');
+      void chooseImage("gallery");
     }
   }, [chooseImage, params.source]);
 
   const analyze = async () => {
     if (!image) {
-      setMessage('Take a photo or choose one from your gallery first.');
+      setMessage("Take a photo or choose one from your gallery first.");
       return;
     }
 
@@ -57,12 +66,12 @@ export default function ScannerScreen() {
     try {
       const analysis = await analyzeFoodImage(image.base64);
       saveScan({ imageUri: image.uri, analysis });
-      router.replace('/result');
+      router.replace("/result");
     } catch (error) {
       setMessage(
         error instanceof FoodRecognitionError
           ? error.message
-          : 'Something went wrong while analyzing your meal. Please try again.',
+          : "Something went wrong while analyzing your meal. Please try again.",
       );
     } finally {
       setIsAnalyzing(false);
@@ -74,12 +83,14 @@ export default function ScannerScreen() {
       <ScrollView
         contentContainerClassName="mx-auto w-full max-w-[560px] self-center px-6 pb-9"
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+      >
         <View className="min-h-[58px] flex-row items-center justify-between">
           <Link href="/" asChild>
             <Pressable
               accessibilityRole="button"
-              className="h-10 w-10 items-center justify-center">
+              className="h-10 w-10 items-center justify-center"
+            >
               <Text className="-mt-1 text-[37px] leading-10 text-ink-light dark:text-ink-dark">
                 ‹
               </Text>
@@ -99,7 +110,7 @@ export default function ScannerScreen() {
             MEAL SCANNER
           </Text>
           <Text className="mt-[10px] text-[34px] font-bold leading-[38px] tracking-[-1px] text-ink-light dark:text-ink-dark">
-            Let&apos;s take a{'\n'}closer look.
+            Let&apos;s take a{"\n"}closer look.
           </Text>
           <Text className="mt-[9px] text-sm leading-[21px] text-muted-light dark:text-muted-dark">
             A clear photo helps us make a better estimate.
@@ -133,32 +144,36 @@ export default function ScannerScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Change selected photo"
-              onPress={() => void chooseImage('gallery')}
-              className="absolute right-[13px] top-[13px] rounded-2xl bg-[#202820CC] px-[13px] py-2">
-              <Text className="text-[11px] font-bold text-white">Change photo</Text>
+              onPress={() => void chooseImage("gallery")}
+              className="absolute right-[13px] top-[13px] rounded-2xl bg-[#202820CC] px-[13px] py-2"
+            >
+              <Text className="text-[11px] font-bold text-white">
+                Change photo
+              </Text>
             </Pressable>
           ) : null}
         </View>
 
         <View className="mt-4 gap-[10px]">
           <FoodButton
-            label={image ? 'Retake photo' : 'Take a photo'}
+            label={image ? "Retake photo" : "Take a photo"}
             variant="secondary"
             trailing="＋"
-            onPress={() => void chooseImage('camera')}
+            onPress={() => void chooseImage("camera")}
           />
           <FoodButton
-            label={image ? 'Choose another photo' : 'Choose from gallery'}
+            label={image ? "Choose another photo" : "Choose from gallery"}
             variant="outline"
             trailing="＋"
-            onPress={() => void chooseImage('gallery')}
+            onPress={() => void chooseImage("gallery")}
           />
         </View>
 
         {message ? (
           <View
             accessibilityRole="alert"
-            className="mt-[15px] rounded-[14px] bg-selected-light p-[14px] dark:bg-selected-dark">
+            className="mt-[15px] rounded-[14px] bg-selected-light p-[14px] dark:bg-selected-dark"
+          >
             <Text className="text-[13px] leading-[19px] text-ink-light dark:text-ink-dark">
               {message}
             </Text>
@@ -166,9 +181,13 @@ export default function ScannerScreen() {
         ) : null}
 
         <FoodButton
-          label={isAnalyzing ? 'Taking a closer look…' : 'Analyze my meal'}
-          hint={isAnalyzing ? undefined : 'Your photo is only used for this estimate'}
-          trailing={isAnalyzing ? undefined : '→'}
+          label={isAnalyzing ? "Taking a closer look…" : "Analyze my meal"}
+          hint={
+            isAnalyzing
+              ? undefined
+              : "Your photo is only used for this estimate"
+          }
+          trailing={isAnalyzing ? undefined : "→"}
           disabled={!image || isAnalyzing}
           onPress={() => void analyze()}
           className="mt-[19px]"

@@ -1,18 +1,45 @@
 import { Link, router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandMark } from '@/components/food/BrandMark';
 import { FoodButton } from '@/components/food/FoodButton';
 import { StyledImage } from '@/components/nativewind-interop';
+import { useDailyCalories } from '@/stores/daily-calories';
 import { useScanSession } from '@/stores/scan-session';
 
 export default function ResultScreen() {
   const { scan, clearScan } = useScanSession();
+  const { addEntry } = useDailyCalories();
+  const [isLogging, setIsLogging] = useState(false);
+  const [logged, setLogged] = useState(false);
+  const [logError, setLogError] = useState<string | null>(null);
 
   const startNewScan = () => {
     clearScan();
     router.replace('/scanner');
+  };
+
+  const logMeal = async () => {
+    if (!scan || scan.analysis.estimatedCalories === null) {
+      return;
+    }
+
+    setLogError(null);
+    setIsLogging(true);
+    try {
+      await addEntry({
+        foodName: scan.analysis.foodName,
+        calories: scan.analysis.estimatedCalories,
+        mealType: 'Meal',
+      });
+      setLogged(true);
+    } catch (cause) {
+      setLogError(cause instanceof Error ? cause.message : 'Could not add this meal to your log.');
+    } finally {
+      setIsLogging(false);
+    }
   };
 
   return (
@@ -156,6 +183,31 @@ export default function ResultScreen() {
             </View>
 
             <View className="mt-[22px] gap-[10px]">
+              <FoodButton
+                label={
+                  logged
+                    ? 'Meal added to today’s log'
+                    : isLogging
+                      ? 'Adding meal…'
+                      : 'Log this meal'
+                }
+                hint={
+                  scan.analysis.estimatedCalories === null
+                    ? 'A calorie estimate is needed to add this meal'
+                    : 'Add this estimate to today’s calorie total'
+                }
+                variant={logged ? 'secondary' : 'primary'}
+                trailing={logged || isLogging ? undefined : '＋'}
+                disabled={
+                  logged || isLogging || scan.analysis.estimatedCalories === null
+                }
+                onPress={() => void logMeal()}
+              />
+              {logError ? (
+                <Text accessibilityRole="alert" className="text-xs leading-[18px] text-[#A53F35]">
+                  {logError}
+                </Text>
+              ) : null}
               <FoodButton label="Scan another meal" trailing="→" onPress={startNewScan} />
               <Link href="/" asChild>
                 <FoodButton label="Back to home" variant="outline" />
