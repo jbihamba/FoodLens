@@ -1,8 +1,8 @@
-import { Image } from 'expo-image';
-import { StyleSheet, View } from 'react-native';
-import Animated, { Keyframe, Easing } from 'react-native-reanimated';
+import { View } from 'react-native';
+import { Keyframe, Easing } from 'react-native-reanimated';
 
-import classes from './animated-icon.module.css';
+import { StyledAnimatedView, StyledImage } from './nativewind-interop';
+
 const DURATION = 300;
 
 export function AnimatedSplashOverlay() {
@@ -56,53 +56,29 @@ const glowKeyframe = new Keyframe({
 
 export function AnimatedIcon() {
   return (
-    <View style={styles.iconContainer}>
-      <Animated.View entering={glowKeyframe.duration(60 * 1000 * 4)} style={styles.glow}>
-        <Image style={styles.glow} source={require('@/assets/images/logo-glow.png')} />
-      </Animated.View>
+    <View className="h-32 w-32 items-center justify-center">
+      <StyledAnimatedView
+        entering={glowKeyframe.duration(60 * 1000 * 4)}
+        className="absolute h-[201px] w-[201px]">
+        <StyledImage
+          className="absolute h-[201px] w-[201px]"
+          source={require('@/assets/images/logo-glow.png')}
+        />
+      </StyledAnimatedView>
 
-      <Animated.View style={styles.background} entering={keyframe.duration(DURATION)}>
-        <div className={classes.expoLogoBackground} />
-      </Animated.View>
+      <StyledAnimatedView
+        entering={keyframe.duration(DURATION)}
+        className="absolute h-32 w-32 rounded-[40px] bg-gradient-to-b from-[#3C9FFE] to-[#0274DF]"
+      />
 
-      <Animated.View style={styles.imageContainer} entering={logoKeyframe.duration(DURATION)}>
-        <Image style={styles.image} source={require('@/assets/images/expo-logo.png')} />
-      </Animated.View>
+      <StyledAnimatedView
+        entering={logoKeyframe.duration(DURATION)}
+        className="items-center justify-center">
+        <StyledImage
+          className="absolute h-[71px] w-[76px]"
+          source={require('@/assets/images/expo-logo.png')}
+        />
+      </StyledAnimatedView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    alignItems: 'center',
-    width: '100%',
-    zIndex: 1000,
-    position: 'absolute',
-    top: 128 / 2 + 138,
-  },
-  imageContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  glow: {
-    width: 201,
-    height: 201,
-    position: 'absolute',
-  },
-  iconContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 128,
-    height: 128,
-  },
-  image: {
-    position: 'absolute',
-    width: 76,
-    height: 71,
-  },
-  background: {
-    width: 128,
-    height: 128,
-    position: 'absolute',
-  },
-});

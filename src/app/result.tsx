@@ -1,16 +1,13 @@
-import { Image } from 'expo-image';
 import { Link, router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandMark } from '@/components/food/BrandMark';
 import { FoodButton } from '@/components/food/FoodButton';
-import { BrandColors } from '@/constants/theme';
-import { useTheme } from '@/hooks/use-theme';
+import { StyledImage } from '@/components/nativewind-interop';
 import { useScanSession } from '@/stores/scan-session';
 
 export default function ResultScreen() {
-  const theme = useTheme();
   const { scan, clearScan } = useScanSession();
 
   const startNewScan = () => {
@@ -19,90 +16,110 @@ export default function ResultScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.safeArea, { backgroundColor: theme.background }]}>
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
+    <SafeAreaView className="flex-1 bg-canvas-light dark:bg-canvas-dark">
+      <ScrollView
+        contentContainerClassName="mx-auto w-full max-w-[560px] self-center px-6 pb-[34px]"
+        showsVerticalScrollIndicator={false}>
+        <View className="min-h-[58px] flex-row items-center justify-between">
           <Link href="/" asChild>
-            <Pressable accessibilityRole="button" style={styles.backButton}>
-              <Text style={[styles.backArrow, { color: theme.text }]}>‹</Text>
+            <Pressable
+              accessibilityRole="button"
+              className="h-10 w-10 items-center justify-center">
+              <Text className="-mt-1 text-[37px] leading-10 text-ink-light dark:text-ink-dark">
+                ‹
+              </Text>
             </Pressable>
           </Link>
-          <View style={styles.brand}>
+          <View className="flex-row items-center gap-2">
             <BrandMark size={34} />
-            <Text style={[styles.brandName, { color: theme.text }]}>FoodLens</Text>
+            <Text className="text-base font-bold text-ink-light dark:text-ink-dark">
+              FoodLens
+            </Text>
           </View>
-          <View style={styles.headerSpacer} />
+          <View className="w-10" />
         </View>
 
         {!scan ? (
-          <View style={styles.emptyState}>
-            <Text style={[styles.title, { color: theme.text }]}>No meal to show yet</Text>
-            <Text style={[styles.description, { color: theme.textSecondary }]}>
+          <View className="min-h-[430px] flex-1 items-center justify-center">
+            <Text className="mt-[9px] text-center text-[29px] font-bold leading-[35px] tracking-[-0.7px] text-ink-light dark:text-ink-dark">
+              No meal to show yet
+            </Text>
+            <Text className="mt-[7px] text-center text-[13px] leading-5 text-muted-light dark:text-muted-dark">
               Scan a meal to see its estimate here.
             </Text>
             <Link href="/scanner" asChild>
-              <FoodButton label="Scan a meal" trailing="→" style={styles.emptyButton} />
+              <FoodButton label="Scan a meal" trailing="→" className="mt-[22px] self-stretch" />
             </Link>
           </View>
         ) : (
           <>
-            <View style={styles.heading}>
-              <Text style={styles.kicker}>YOUR MEAL, AT A GLANCE</Text>
-              <Text style={[styles.title, { color: theme.text }]}>{scan.analysis.foodName}</Text>
+            <View className="pb-[17px] pt-5">
+              <Text className="text-[10px] font-bold tracking-[1.3px] text-brand-primary">
+                YOUR MEAL, AT A GLANCE
+              </Text>
+              <Text className="mt-[9px] text-[29px] font-bold leading-[35px] tracking-[-0.7px] text-ink-light dark:text-ink-dark">
+                {scan.analysis.foodName}
+              </Text>
             </View>
 
-            <View style={styles.photoCard}>
-              <Image source={{ uri: scan.imageUri }} contentFit="cover" style={styles.photo} />
-              <View style={styles.photoTag}>
-                <Text style={styles.photoTagText}>FOODLENS ESTIMATE</Text>
+            <View className="h-[220px] overflow-hidden rounded-[23px]">
+              <StyledImage
+                source={{ uri: scan.imageUri }}
+                contentFit="cover"
+                className="h-full w-full"
+              />
+              <View className="absolute bottom-[13px] left-[13px] rounded-[13px] bg-[#202820CC] px-[11px] py-[7px]">
+                <Text className="text-[9px] font-bold tracking-[1px] text-white">
+                  FOODLENS ESTIMATE
+                </Text>
               </View>
             </View>
 
-            <View
-              style={[
-                styles.calorieCard,
-                { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected },
-              ]}>
-              <View style={styles.calorieTop}>
-                <Text style={[styles.cardLabel, { color: theme.textSecondary }]}>
+            <View className="mt-[15px] rounded-[21px] border-[0.5px] border-selected-light bg-surface-light p-[19px] dark:border-selected-dark dark:bg-surface-dark">
+              <View className="flex-row items-center justify-between">
+                <Text className="text-[10px] font-bold tracking-[1.2px] text-muted-light dark:text-muted-dark">
                   ESTIMATED ENERGY
                 </Text>
-                <View style={styles.calorieIcon}>
-                  <Text style={styles.calorieIconText}>kcal</Text>
+                <View className="rounded-[10px] bg-brand-secondary px-[9px] py-[5px]">
+                  <Text className="text-[10px] font-bold text-brand-primary">kcal</Text>
                 </View>
               </View>
-              <View style={styles.calories}>
-                <Text style={[styles.calorieNumber, { color: theme.text }]}>
+              <View className="mt-[3px] flex-row items-baseline gap-2">
+                <Text className="text-[48px] font-bold leading-[56px] tracking-[-2px] text-ink-light dark:text-ink-dark">
                   {scan.analysis.estimatedCalories?.toLocaleString() ?? '—'}
                 </Text>
-                <Text style={[styles.calorieUnit, { color: theme.textSecondary }]}>kcal</Text>
+                <Text className="text-[15px] font-semibold text-muted-light dark:text-muted-dark">
+                  kcal
+                </Text>
               </View>
-              <Text style={[styles.calorieNote, { color: theme.textSecondary }]}>
+              <Text className="text-xs leading-[18px] text-muted-light dark:text-muted-dark">
                 {scan.analysis.estimatedCalories === null
                   ? 'Not enough visual detail for a calorie estimate.'
                   : 'An approximate estimate for the meal shown.'}
               </Text>
               {scan.analysis.portionSize ? (
-                <View style={styles.portionRow}>
-                  <Text style={[styles.portionLabel, { color: theme.textSecondary }]}>
+                <View className="mt-4 flex-row items-center justify-between border-t-[0.5px] border-brand-border pt-[13px]">
+                  <Text className="text-[10px] font-bold tracking-[1px] text-muted-light dark:text-muted-dark">
                     ESTIMATED PORTION
                   </Text>
-                  <Text style={[styles.portionValue, { color: theme.text }]}>
+                  <Text className="text-sm font-bold text-ink-light dark:text-ink-dark">
                     {scan.analysis.portionSize}
                   </Text>
                 </View>
               ) : null}
             </View>
 
-            <View style={styles.detailSection}>
-              <Text style={[styles.sectionTitle, { color: theme.text }]}>What we see</Text>
-              <Text style={[styles.description, { color: theme.textSecondary }]}>
+            <View className="pt-6">
+              <Text className="text-[17px] font-bold leading-[23px] text-ink-light dark:text-ink-dark">
+                What we see
+              </Text>
+              <Text className="mt-[7px] text-[13px] leading-5 text-muted-light dark:text-muted-dark">
                 {scan.analysis.description}
               </Text>
               {scan.analysis.confidence !== null ? (
-                <View style={styles.confidencePill}>
-                  <View style={styles.confidenceDot} />
-                  <Text style={[styles.confidenceText, { color: theme.textSecondary }]}>
+                <View className="mt-3 self-start flex-row items-center gap-[6px] rounded-[14px] bg-brand-secondary px-[10px] py-[6px]">
+                  <View className="h-[6px] w-[6px] rounded-full bg-brand-primary" />
+                  <Text className="text-[11px] font-semibold text-muted-light dark:text-muted-dark">
                     Visual match · {Math.round(scan.analysis.confidence * 100)}%
                   </Text>
                 </View>
@@ -110,27 +127,35 @@ export default function ResultScreen() {
             </View>
 
             {scan.analysis.ingredients.length > 0 ? (
-              <View style={styles.ingredientsSection}>
-                <Text style={[styles.sectionTitle, { color: theme.text }]}>Main ingredients</Text>
-                <View style={styles.ingredients}>
+              <View className="pt-[23px]">
+                <Text className="text-[17px] font-bold leading-[23px] text-ink-light dark:text-ink-dark">
+                  Main ingredients
+                </Text>
+                <View className="mt-[11px] flex-row flex-wrap gap-2">
                   {scan.analysis.ingredients.map((ingredient) => (
-                    <View key={ingredient} style={styles.ingredientPill}>
-                      <Text style={styles.ingredientText}>{ingredient}</Text>
+                    <View
+                      key={ingredient}
+                      className="rounded-[15px] bg-brand-secondary px-3 py-2">
+                      <Text className="text-xs font-semibold text-brand-primary">
+                        {ingredient}
+                      </Text>
                     </View>
                   ))}
                 </View>
               </View>
             ) : null}
 
-            <View style={styles.disclaimerCard}>
-              <Text style={styles.disclaimerIcon}>i</Text>
-              <Text style={styles.disclaimerText}>
+            <View className="mt-6 flex-row items-start gap-[10px] rounded-[15px] bg-[#F4EBDD] p-[14px]">
+              <Text className="h-[19px] w-[19px] overflow-hidden rounded-full bg-[#E9D1AF] text-center text-xs font-bold leading-[19px] text-[#78572F]">
+                i
+              </Text>
+              <Text className="flex-1 text-[11px] leading-[17px] text-[#705C42]">
                 Calories are estimates. Actual nutrition can vary with portion size, ingredients,
                 and preparation methods.
               </Text>
             </View>
 
-            <View style={styles.actions}>
+            <View className="mt-[22px] gap-[10px]">
               <FoodButton label="Scan another meal" trailing="→" onPress={startNewScan} />
               <Link href="/" asChild>
                 <FoodButton label="Back to home" variant="outline" />
@@ -138,9 +163,9 @@ export default function ResultScreen() {
             </View>
           </>
         )}
-        <View style={styles.footer}>
+        <View className="mt-7 flex-row items-center justify-center gap-[9px] border-t-[0.5px] border-brand-border pt-[17px]">
           <BrandMark size={26} />
-          <Text style={[styles.footerText, { color: theme.textSecondary }]}>
+          <Text className="text-[11px] text-muted-light dark:text-muted-dark">
             A helpful estimate, never a diagnosis.
           </Text>
         </View>
@@ -148,259 +173,3 @@ export default function ResultScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-  },
-  content: {
-    width: '100%',
-    maxWidth: 560,
-    alignSelf: 'center',
-    paddingHorizontal: 24,
-    paddingBottom: 34,
-  },
-  header: {
-    minHeight: 58,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  backArrow: {
-    fontSize: 37,
-    lineHeight: 40,
-    marginTop: -4,
-  },
-  brand: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  brandName: {
-    fontSize: 16,
-    fontWeight: '700',
-  },
-  headerSpacer: {
-    width: 40,
-  },
-  heading: {
-    paddingTop: 20,
-    paddingBottom: 17,
-  },
-  kicker: {
-    color: BrandColors.primary,
-    fontSize: 10,
-    letterSpacing: 1.3,
-    fontWeight: '700',
-  },
-  title: {
-    marginTop: 9,
-    fontSize: 29,
-    lineHeight: 35,
-    letterSpacing: -0.7,
-    fontWeight: '700',
-  },
-  photoCard: {
-    height: 220,
-    borderRadius: 23,
-    overflow: 'hidden',
-  },
-  photo: {
-    width: '100%',
-    height: '100%',
-  },
-  photoTag: {
-    position: 'absolute',
-    left: 13,
-    bottom: 13,
-    backgroundColor: '#202820CC',
-    borderRadius: 13,
-    paddingHorizontal: 11,
-    paddingVertical: 7,
-  },
-  photoTagText: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    letterSpacing: 1,
-    fontWeight: '700',
-  },
-  calorieCard: {
-    marginTop: 15,
-    padding: 19,
-    borderRadius: 21,
-    borderWidth: StyleSheet.hairlineWidth,
-  },
-  calorieTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  cardLabel: {
-    fontSize: 10,
-    letterSpacing: 1.2,
-    fontWeight: '700',
-  },
-  calorieIcon: {
-    borderRadius: 10,
-    paddingHorizontal: 9,
-    paddingVertical: 5,
-    backgroundColor: BrandColors.secondary,
-  },
-  calorieIconText: {
-    color: BrandColors.primary,
-    fontSize: 10,
-    fontWeight: '700',
-  },
-  calories: {
-    marginTop: 3,
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-  },
-  calorieNumber: {
-    fontSize: 48,
-    lineHeight: 56,
-    letterSpacing: -2,
-    fontWeight: '700',
-  },
-  calorieUnit: {
-    fontSize: 15,
-    fontWeight: '600',
-  },
-  calorieNote: {
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  portionRow: {
-    marginTop: 16,
-    paddingTop: 13,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: BrandColors.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  portionLabel: {
-    fontSize: 10,
-    letterSpacing: 1,
-    fontWeight: '700',
-  },
-  portionValue: {
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  detailSection: {
-    paddingTop: 24,
-  },
-  sectionTitle: {
-    fontSize: 17,
-    lineHeight: 23,
-    fontWeight: '700',
-  },
-  description: {
-    marginTop: 7,
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  confidencePill: {
-    alignSelf: 'flex-start',
-    marginTop: 12,
-    borderRadius: 14,
-    backgroundColor: BrandColors.secondary,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  confidenceDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: BrandColors.primary,
-  },
-  confidenceText: {
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  ingredientsSection: {
-    paddingTop: 23,
-  },
-  ingredients: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginTop: 11,
-  },
-  ingredientPill: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 15,
-    backgroundColor: BrandColors.secondary,
-  },
-  ingredientText: {
-    color: BrandColors.primary,
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  disclaimerCard: {
-    marginTop: 24,
-    padding: 14,
-    borderRadius: 15,
-    backgroundColor: '#F4EBDD',
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 10,
-  },
-  disclaimerIcon: {
-    width: 19,
-    height: 19,
-    borderRadius: 10,
-    overflow: 'hidden',
-    textAlign: 'center',
-    lineHeight: 19,
-    color: '#78572F',
-    backgroundColor: '#E9D1AF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-  disclaimerText: {
-    flex: 1,
-    color: '#705C42',
-    fontSize: 11,
-    lineHeight: 17,
-  },
-  actions: {
-    marginTop: 22,
-    gap: 10,
-  },
-  emptyState: {
-    flex: 1,
-    minHeight: 430,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emptyButton: {
-    marginTop: 22,
-    alignSelf: 'stretch',
-  },
-  footer: {
-    marginTop: 28,
-    paddingTop: 17,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: BrandColors.border,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 9,
-  },
-  footerText: {
-    fontSize: 11,
-  },
-});

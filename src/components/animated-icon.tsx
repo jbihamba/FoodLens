@@ -1,9 +1,10 @@
-import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import { useState } from 'react';
-import { Dimensions, StyleSheet, View } from 'react-native';
-import Animated, { Easing, Keyframe } from 'react-native-reanimated';
+import { Dimensions, View } from 'react-native';
+import { Easing, Keyframe } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
+
+import { StyledAnimatedView, StyledImage } from './nativewind-interop';
 
 const INITIAL_SCALE_FACTOR = Dimensions.get('screen').height / 90;
 const DURATION = 600;
@@ -33,19 +34,24 @@ export function AnimatedSplashOverlay() {
     },
   });
 
-  const image = <Image style={styles.image} source={require('@/assets/images/expo-logo.png')} />;
+  const image = (
+    <StyledImage
+      className="h-[71px] w-[76px]"
+      source={require('@/assets/images/expo-logo.png')}
+    />
+  );
 
   return animate ? (
-    <Animated.View
+    <StyledAnimatedView
       entering={splashKeyframe.duration(DURATION).withCallback((finished) => {
         'worklet';
         if (finished) {
           scheduleOnRN(setVisible, false);
         }
       })}
-      style={styles.splashOverlay}>
+      className="absolute inset-0 z-[1000] items-center justify-center bg-[#208AEF]">
       {image}
-    </Animated.View>
+    </StyledAnimatedView>
   ) : (
     <View
       onLayout={() => {
@@ -53,7 +59,7 @@ export function AnimatedSplashOverlay() {
           setAnimate(true);
         });
       }}
-      style={styles.splashOverlay}>
+      className="absolute inset-0 z-[1000] items-center justify-center bg-[#208AEF]">
       {image}
     </View>
   );
@@ -97,52 +103,28 @@ const glowKeyframe = new Keyframe({
 
 export function AnimatedIcon() {
   return (
-    <View style={styles.iconContainer}>
-      <Animated.View entering={glowKeyframe.duration(60 * 1000 * 4)} style={styles.glow}>
-        <Image style={styles.glow} source={require('@/assets/images/logo-glow.png')} />
-      </Animated.View>
+    <View className="z-[100] h-32 w-32 items-center justify-center">
+      <StyledAnimatedView
+        entering={glowKeyframe.duration(60 * 1000 * 4)}
+        className="absolute h-[201px] w-[201px]">
+        <StyledImage
+          className="absolute h-[201px] w-[201px]"
+          source={require('@/assets/images/logo-glow.png')}
+        />
+      </StyledAnimatedView>
 
-      <Animated.View entering={keyframe.duration(DURATION)} style={styles.background} />
-      <Animated.View style={styles.imageContainer} entering={logoKeyframe.duration(DURATION)}>
-        <Image style={styles.image} source={require('@/assets/images/expo-logo.png')} />
-      </Animated.View>
+      <StyledAnimatedView
+        entering={keyframe.duration(DURATION)}
+        className="absolute h-32 w-32 rounded-[40px] bg-[#0274DF]"
+      />
+      <StyledAnimatedView
+        entering={logoKeyframe.duration(DURATION)}
+        className="items-center justify-center">
+        <StyledImage
+          className="h-[71px] w-[76px]"
+          source={require('@/assets/images/expo-logo.png')}
+        />
+      </StyledAnimatedView>
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  imageContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  glow: {
-    width: 201,
-    height: 201,
-    position: 'absolute',
-  },
-  iconContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: 128,
-    height: 128,
-    zIndex: 100,
-  },
-  image: {
-    width: 76,
-    height: 71,
-  },
-  background: {
-    borderRadius: 40,
-    experimental_backgroundImage: `linear-gradient(180deg, #3C9FFE, #0274DF)`,
-    width: 128,
-    height: 128,
-    position: 'absolute',
-  },
-  splashOverlay: {
-    ...StyleSheet.absoluteFill,
-    backgroundColor: '#208AEF',
-    alignItems: 'center',
-    justifyContent: 'center',
-    zIndex: 1000,
-  },
-});
