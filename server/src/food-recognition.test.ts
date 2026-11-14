@@ -35,7 +35,7 @@ test('returns validated structured analysis from the vision response', async () 
   globalThis.fetch = async (input, init) => {
     assert.equal(
       input,
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.8-flash:generateContent',
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent',
     );
     assert.equal(new Headers(init?.headers).get('x-goog-api-key'), 'test-key');
     const requestBody = JSON.parse(String(init?.body));

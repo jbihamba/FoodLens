@@ -53,7 +53,7 @@ export async function analyzeFoodImage(imageBase64: string): Promise<FoodAnalysi
   }
 
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 60_000);
+  const timeout = setTimeout(() => controller.abort(), 100_000);
   let response: Response;
   try {
     response = await fetch(`${API_URL}/v1/food/analyze`, {

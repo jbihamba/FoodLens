@@ -19,7 +19,7 @@ The app uses Expo Router for a home → scanner → result flow. Camera capture,
 
 ## Recognition API
 
-The separate TypeScript API forwards validated meal photos to Google's Gemini API using the `gemini-3.8-flash` model by default. It requires Node.js 20.6+ and does not store images or require a database.
+The separate TypeScript API forwards validated meal photos to Google's Gemini API using the `gemini-3.1-flash-lite` model by default. It requires Node.js 20.6+ and does not store images or require a database.
 
 ```sh
 cd server

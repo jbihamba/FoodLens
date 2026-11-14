@@ -1,6 +1,6 @@
 const GEMINI_GENERATE_CONTENT_URL =
   'https://generativelanguage.googleapis.com/v1beta/models';
-const DEFAULT_MODEL = 'gemini-3.8-flash';
+const DEFAULT_MODEL = 'gemini-3.1-flash-lite';
 const MAX_IMAGE_BASE64_LENGTH = 6_000_000;
 
 export interface FoodAnalysis {
@@ -163,13 +163,13 @@ export async function recognizeFood(
           'x-goog-api-key': apiKey,
           'Content-Type': 'application/json',
         },
-        signal: AbortSignal.timeout(55_000),
+        signal: AbortSignal.timeout(90_000),
         body: JSON.stringify({
           systemInstruction: {
             parts: [
               {
                 text:
-                  'You analyze meal photos for a food diary. Report only foods clearly supported by the image. Never claim nutritional certainty. Estimate total calories for all recognizable meal components; if the portion or preparation is too unclear, use null for calories or portion size rather than inventing precision. List only identifiable main ingredients. Confidence is an approximate visual-match score from 0 to 1, not a calibrated probability. If no recognizable food is present, set isFood false, use empty foodName and ingredients, null calories, portion size, and confidence, and briefly explain in description.',
+                  'You analyze meal photos for a food diary. If any edible food is visibly present, set isFood true even when the exact dish is uncertain; use a simple generic food name rather than rejecting the photo. Set isFood false only when the image clearly contains no edible food. Never claim nutritional certainty. Estimate total calories for recognizable meal components; if the portion or preparation is too unclear, use null for calories or portion size rather than inventing precision. List only identifiable main ingredients. Confidence is an approximate visual-match score from 0 to 1, not a calibrated probability. When isFood is false, use an empty foodName and ingredients, null calories, portion size, and confidence, and briefly explain in description.',
               },
             ],
           },
@@ -192,13 +192,23 @@ export async function recognizeFood(
           generationConfig: {
             responseMimeType: 'application/json',
             responseSchema: foodSchema,
-            maxOutputTokens: 800,
+            maxOutputTokens: 500,
+            thinkingConfig: {
+              thinkingLevel: 'LOW',
+            },
           },
         }),
       },
     );
-  } catch {
-    console.error('[food-recognition] Gemini request failed to connect.');
+  } catch (error) {
+    const errorDetail = error instanceof Error ? `${error.name}: ${error.message}` : 'Unknown error';
+    const causeDetail =
+      error instanceof Error && error.cause instanceof Error
+        ? `; ${error.cause.name}: ${error.cause.message}`
+        : '';
+    console.error(
+      `[food-recognition] Gemini request failed: ${(errorDetail + causeDetail).slice(0, 500)}`,
+    );
     throw new RecognitionError(
       'provider_error',
       502,
