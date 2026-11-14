@@ -20,6 +20,7 @@ export function DailyCalorieCard({
   const safeGoal = Number.isFinite(goal) && goal > 0 ? goal : 0;
   const percentage = safeGoal > 0 ? (consumed / safeGoal) * 100 : 0;
   const remaining = Math.max(safeGoal - consumed, 0);
+  const isGoalReached = safeGoal > 0 && consumed >= safeGoal;
 
   return (
     <View className="mt-[25px] rounded-[23px] border-[0.5px] border-selected-light bg-surface-light p-[19px] dark:border-selected-dark dark:bg-surface-dark">
@@ -60,13 +61,22 @@ export function DailyCalorieCard({
             </Text>
           </View>
           <View className="mt-[11px]">
-            <CalorieProgressBar progress={percentage} />
+            <CalorieProgressBar progress={percentage} isGoalReached={isGoalReached} />
           </View>
-          <Text className="mt-[12px] text-xs font-medium text-muted-light dark:text-muted-dark">
-            {consumed > safeGoal
-              ? `${(consumed - safeGoal).toLocaleString()} kcal over your goal`
-              : `${remaining.toLocaleString()} kcal remaining`}
-          </Text>
+          {isGoalReached ? (
+            <View className="mt-[12px] flex-row items-center gap-[7px]">
+              <View className="h-[7px] w-[7px] rounded-full bg-[#C65346]" />
+              <Text className="text-xs font-bold text-[#A53F35] dark:text-[#F2A097]">
+                {consumed > safeGoal
+                  ? `Over goal by ${(consumed - safeGoal).toLocaleString()} kcal`
+                  : 'Daily goal reached'}
+              </Text>
+            </View>
+          ) : (
+            <Text className="mt-[12px] text-xs font-medium text-muted-light dark:text-muted-dark">
+              {remaining.toLocaleString()} kcal remaining
+            </Text>
+          )}
           {entries.length === 0 && (
             <Text className="mt-2 text-[11px] leading-4 text-muted-light dark:text-muted-dark">
               Log a scanned meal to start tracking today.
