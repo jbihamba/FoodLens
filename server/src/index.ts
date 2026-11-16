@@ -79,6 +79,9 @@ export function createAppServer() {
       return;
     }
 
+    const requestStartedAt = Date.now();
+    console.info('[food-recognition] Analysis request received.');
+
     const ipAddress = request.socket.remoteAddress ?? 'unknown';
     if (!allowRequest(ipAddress)) {
       sendJson(response, 429, {
@@ -107,6 +110,9 @@ export function createAppServer() {
         throw new RecognitionError('invalid_image', 400, 'Choose a valid JPEG image.');
       }
       decodeJpegBase64(imageBase64);
+      console.info(
+        `[food-recognition] Photo received (${Math.ceil((imageBase64.length * 3) / 4)} bytes) in ${Date.now() - requestStartedAt} ms.`,
+      );
 
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
@@ -121,7 +127,11 @@ export function createAppServer() {
       }
 
       const model = process.env.GEMINI_MODEL?.trim() || undefined;
+      console.info('[food-recognition] Sending photo to the recognition provider.');
       const analysis = await recognizeFood(imageBase64, apiKey, model);
+      console.info(
+        `[food-recognition] Analysis completed in ${Date.now() - requestStartedAt} ms.`,
+      );
       sendJson(response, 200, { analysis });
     } catch (error) {
       if (error instanceof RecognitionError || error instanceof RequestError) {

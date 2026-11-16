@@ -62,9 +62,20 @@ export async function analyzeFoodImage(imageBase64: string): Promise<FoodAnalysi
       body: JSON.stringify({ imageBase64 }),
       signal: controller.signal,
     });
-  } catch {
+  } catch (error) {
+    const detail =
+      error instanceof Error ? `${error.name}: ${error.message}` : 'Unknown network error';
+    console.error('[food-recognition] Analysis request failed:', error);
+    if (controller.signal.aborted) {
+      throw new FoodRecognitionError(
+        'Meal analysis timed out. Please check the server and try again.',
+        'network',
+      );
+    }
     throw new FoodRecognitionError(
-      'We could not reach FoodLens. Check your connection and try again.',
+      __DEV__
+        ? `We could not reach FoodLens (${detail}). Check your connection and try again.`
+        : 'We could not reach FoodLens. Check your connection and try again.',
       'network',
     );
   } finally {

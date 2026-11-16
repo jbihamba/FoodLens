@@ -18,6 +18,9 @@ npx expo start
 The app uses Expo Router for a home → scanner → result flow. Camera capture, gallery selection, and JPEG resizing use the SDK-compatible Expo ImagePicker and ImageManipulator packages.
 The interface uses NativeWind/Tailwind utility classes across iOS, Android, and web; web bundling is configured to use Metro.
 
+Daily calorie goals and logged meals are stored locally in the `foodlens.db` SQLite database. The app starts with a 2,000 kcal goal; scan a meal and choose **Log this meal** to include its estimate in today's total. Edit or remove today's entries from the home screen, or change the goal with **Edit** on the Daily Goal card. Meal timestamps are stored in ISO 8601 UTC and grouped by the device's local calendar day.
+Web development and Expo Hosting are configured with the cross-origin isolation headers required by Expo SQLite.
+
 ## Recognition API
 
 The separate TypeScript API forwards validated meal photos to Google's Gemini API using the `gemini-3.1-flash-lite` model by default. It requires Node.js 20.6+ and does not store images or require a database.
