@@ -52,6 +52,14 @@
           "microphonePermission": false
         }
       ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "FoodLens uses your camera to frame and capture a meal.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
       "expo-sqlite"
     ],
     "experiments": {

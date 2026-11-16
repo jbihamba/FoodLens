@@ -15,7 +15,7 @@ Set `EXPO_PUBLIC_FOODLENS_API_URL` in the root `.env` to the reachable API addre
 npx expo start
 ```
 
-The app uses Expo Router for a home → scanner → result flow. Camera capture, gallery selection, and JPEG resizing use the SDK-compatible Expo ImagePicker and ImageManipulator packages.
+The app uses Expo Router for a home → scanner → result flow. The scanner uses Expo Camera for a live camera preview and capture, Expo ImagePicker for gallery selection, and ImageManipulator to prepare images for analysis.
 The interface uses NativeWind/Tailwind utility classes across iOS, Android, and web; web bundling is configured to use Metro.
 
 Daily calorie goals and logged meals are stored locally in the `foodlens.db` SQLite database. The app starts with a 2,000 kcal goal; scan a meal and choose **Log this meal** to include its estimate in today's total. Edit or remove today's entries from the home screen, or change the goal with **Edit** on the Daily Goal card. Meal timestamps are stored in ISO 8601 UTC and grouped by the device's local calendar day.

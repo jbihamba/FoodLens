@@ -3,12 +3,10 @@ import * as ImagePicker from 'expo-image-picker';
 
 const MAX_IMAGE_DIMENSION = 1280;
 
-export type ImageSource = 'camera' | 'gallery';
-
 export class ImageSelectionError extends Error {
   constructor(
     message: string,
-    readonly kind: 'permission' | 'invalid-image' | 'picker',
+    readonly kind: 'invalid-image' | 'picker',
   ) {
     super(message);
     this.name = 'ImageSelectionError';
@@ -20,43 +18,49 @@ export interface SelectedFoodImage {
   base64: string;
 }
 
-export async function selectFoodImage(source: ImageSource): Promise<SelectedFoodImage | null> {
+export async function selectFoodImage(): Promise<SelectedFoodImage | null> {
   try {
-    const permission =
-      source === 'camera'
-        ? await ImagePicker.requestCameraPermissionsAsync()
-        : await ImagePicker.requestMediaLibraryPermissionsAsync();
-
-    if (!permission.granted) {
-      throw new ImageSelectionError(
-        source === 'camera'
-          ? 'Camera access is needed to take a food photo.'
-          : 'Photo access is needed to choose a food image.',
-        'permission',
-      );
-    }
-
-    const result =
-      source === 'camera'
-        ? await ImagePicker.launchCameraAsync({
-            mediaTypes: ['images'],
-            quality: 0.8,
-          })
-        : await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'],
-            quality: 0.8,
-          });
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
 
     if (result.canceled) {
       return null;
     }
 
     const asset = result.assets[0];
+    if (!asset?.uri) {
+      throw new ImageSelectionError(
+        'That file could not be used. Choose a different food photo.',
+        'invalid-image',
+      );
+    }
+
+    return await prepareFoodImage(asset.uri, asset.width, asset.height, asset.mimeType);
+  } catch (error) {
+    if (error instanceof ImageSelectionError) {
+      throw error;
+    }
+    throw new ImageSelectionError(
+      'We could not open or prepare that image. Please try again.',
+      'picker',
+    );
+  }
+}
+
+export async function prepareFoodImage(
+  uri: string,
+  sourceWidth: number,
+  sourceHeight: number,
+  mimeType?: string | null,
+): Promise<SelectedFoodImage> {
+  try {
     if (
-      !asset?.uri ||
-      asset.width <= 0 ||
-      asset.height <= 0 ||
-      (asset.mimeType && !asset.mimeType.startsWith('image/'))
+      !uri ||
+      sourceWidth <= 0 ||
+      sourceHeight <= 0 ||
+      (mimeType && !mimeType.startsWith('image/'))
     ) {
       throw new ImageSelectionError(
         'That file could not be used. Choose a different food photo.',
@@ -64,10 +68,10 @@ export async function selectFoodImage(source: ImageSource): Promise<SelectedFood
       );
     }
 
-    const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(asset.width, asset.height));
-    const width = Math.max(1, Math.round(asset.width * scale));
-    const height = Math.max(1, Math.round(asset.height * scale));
-    const context = ImageManipulator.manipulate(asset.uri, {
+    const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(sourceWidth, sourceHeight));
+    const width = Math.max(1, Math.round(sourceWidth * scale));
+    const height = Math.max(1, Math.round(sourceHeight * scale));
+    const context = ImageManipulator.manipulate(uri, {
       maxWidth: MAX_IMAGE_DIMENSION,
       maxHeight: MAX_IMAGE_DIMENSION,
     });
@@ -108,7 +112,7 @@ export async function selectFoodImage(source: ImageSource): Promise<SelectedFood
       throw error;
     }
     throw new ImageSelectionError(
-      'We could not open or prepare that image. Please try again.',
+      'We could not prepare that photo. Please try another image.',
       'picker',
     );
   }
