@@ -53,6 +53,11 @@ export async function initializeCalorieDatabase(db: SQLiteDatabase) {
       consumed_at TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS app_preferences (
+      key TEXT PRIMARY KEY NOT NULL,
+      value TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS food_entries_consumed_at_idx
       ON food_entries (consumed_at);
   `);
@@ -69,6 +74,22 @@ export async function initializeCalorieDatabase(db: SQLiteDatabase) {
       now,
     );
   }
+}
+
+export async function hasCompletedOnboarding(db: SQLiteDatabase) {
+  const preference = await db.getFirstAsync<{ value: string }>(
+    'SELECT value FROM app_preferences WHERE key = ?',
+    'onboarding_completed',
+  );
+  return preference?.value === 'true';
+}
+
+export async function completeOnboarding(db: SQLiteDatabase) {
+  await db.runAsync(
+    'INSERT OR REPLACE INTO app_preferences (key, value) VALUES (?, ?)',
+    'onboarding_completed',
+    'true',
+  );
 }
 
 export async function getDailyGoal(db: SQLiteDatabase) {
