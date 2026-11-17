@@ -141,6 +141,7 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
         foodName: foodName.trim(),
         calories,
         mealType,
+        imageUri: scan.imageUri,
       });
       setLogged(true);
     } catch (cause) {

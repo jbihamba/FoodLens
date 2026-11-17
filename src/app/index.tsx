@@ -1,13 +1,23 @@
-import { Link, useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { Link, router, useFocusEffect } from 'expo-router';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  ActivityIndicator,
+  Modal,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { DailyCalorieCard } from '@/components/food/DailyCalorieCard';
 import { BrandMark } from '@/components/food/BrandMark';
 import { FoodButton } from '@/components/food/FoodButton';
+import { MealDiary } from '@/components/food/MealDiary';
 import { StyledImage } from '@/components/nativewind-interop';
 import { DEFAULT_DAILY_GOAL } from '@/services/calorieTracking';
+import type { FoodEntry } from '@/services/calorieTracking';
 import { useDailyCalories } from '@/stores/daily-calories';
 
 const steps = [
@@ -29,14 +39,55 @@ const steps = [
 ];
 
 export default function HomeScreen() {
-  const { goal, entries, isLoading, error, refresh } = useDailyCalories();
+  const { goal, entries, isLoading, error, refresh, deleteEntry } = useDailyCalories();
   const consumed = entries.reduce((total, entry) => total + entry.calories, 0);
+  const [pendingDelete, setPendingDelete] = useState<FoodEntry | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showToast = (message: string) => {
+    if (toastTimer.current) {
+      clearTimeout(toastTimer.current);
+    }
+    setToast(message);
+    toastTimer.current = setTimeout(() => setToast(null), 2400);
+  };
+
+  useEffect(
+    () => () => {
+      if (toastTimer.current) {
+        clearTimeout(toastTimer.current);
+      }
+    },
+    [],
+  );
 
   useFocusEffect(
     useCallback(() => {
       void refresh().catch(() => undefined);
     }, [refresh]),
   );
+
+  const confirmDelete = async () => {
+    if (!pendingDelete || isDeleting) {
+      return;
+    }
+
+    setDeleteError(null);
+    setIsDeleting(true);
+    try {
+      const deletedName = pendingDelete.food_name;
+      await deleteEntry(pendingDelete.id);
+      setPendingDelete(null);
+      showToast(`${deletedName} removed from your diary`);
+    } catch (cause) {
+      setDeleteError(cause instanceof Error ? cause.message : 'Could not delete this meal.');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
 
   return (
     <SafeAreaView className="flex-1 bg-canvas-light dark:bg-canvas-dark">
@@ -82,47 +133,25 @@ export default function HomeScreen() {
             </Text>
           ) : null}
 
-          {entries.length > 0 ? (
-            <View className="mt-[20px]">
-              <Text className="mb-[10px] text-[17px] font-bold text-ink-light dark:text-ink-dark">
-                Today&apos;s meals
-              </Text>
-              <View className="gap-2">
-                {entries.map((entry) => (
-                  <Link
-                    key={entry.id}
-                    href={{ pathname: '/entry', params: { id: String(entry.id) } }}
-                    asChild>
-                    <Pressable
-                      accessibilityRole="button"
-                      className="min-h-[63px] flex-row items-center justify-between rounded-[16px] border-[0.5px] border-selected-light bg-surface-light px-[15px] py-3 dark:border-selected-dark dark:bg-surface-dark">
-                      <View className="mr-3 flex-1">
-                        <Text
-                          numberOfLines={1}
-                          className="text-sm font-bold text-ink-light dark:text-ink-dark">
-                          {entry.food_name}
-                        </Text>
-                        <Text className="mt-1 text-[11px] text-muted-light dark:text-muted-dark">
-                          {entry.meal_type ?? 'Meal'} ·{' '}
-                          {new Date(entry.consumed_at).toLocaleTimeString([], {
-                            hour: 'numeric',
-                            minute: '2-digit',
-                          })}
-                        </Text>
-                      </View>
-                      <Text className="text-sm font-bold text-brand-primary dark:text-[#A8C8B2]">
-                        {entry.calories.toLocaleString()} kcal
-                      </Text>
-                    </Pressable>
-                  </Link>
-                ))}
-              </View>
-            </View>
-          ) : isLoading ? (
-            <View className="mt-4 min-h-8 flex-row items-center justify-center">
+          {isLoading ? (
+            <View className="mt-6 min-h-20 items-center justify-center rounded-[21px] border-[0.5px] border-selected-light bg-surface-light dark:border-selected-dark dark:bg-surface-dark">
               <ActivityIndicator size="small" color="#245C45" />
+              <Text className="mt-2 text-[11px] text-muted-light dark:text-muted-dark">
+                Loading today&apos;s diary…
+              </Text>
             </View>
-          ) : null}
+          ) : (
+            <MealDiary
+              entries={entries}
+              onEdit={(id) => {
+                router.push({ pathname: '/entry', params: { id: String(id) } });
+              }}
+              onDelete={(entry) => {
+                setDeleteError(null);
+                setPendingDelete(entry);
+              }}
+            />
+          )}
 
           <View className="mt-[25px] h-[190px] overflow-hidden rounded-[28px] bg-brand-primary">
             <StyledImage
@@ -198,6 +227,63 @@ export default function HomeScreen() {
           </Text>
         </View>
       </ScrollView>
+
+      <Modal
+        transparent
+        animationType="fade"
+        visible={pendingDelete !== null}
+        onRequestClose={() => {
+          if (!isDeleting) {
+            setPendingDelete(null);
+          }
+        }}>
+        <View className="flex-1 items-center justify-center bg-black/45 px-6">
+          <View className="w-full max-w-[390px] rounded-[24px] bg-surface-light p-5 dark:bg-surface-dark">
+            <Text className="text-[19px] font-bold text-ink-light dark:text-ink-dark">
+              Delete this meal?
+            </Text>
+            <Text className="mt-2 text-[13px] leading-5 text-muted-light dark:text-muted-dark">
+              {pendingDelete
+                ? `${pendingDelete.food_name} will be removed from your diary.`
+                : 'This meal will be removed from your diary.'}
+            </Text>
+            {deleteError ? (
+              <Text accessibilityRole="alert" className="mt-3 text-xs leading-[18px] text-[#A53F35]">
+                {deleteError}
+              </Text>
+            ) : null}
+            <View className="mt-5 flex-row gap-3">
+              <Pressable
+                accessibilityRole="button"
+                disabled={isDeleting}
+                onPress={() => setPendingDelete(null)}
+                className="min-h-[48px] flex-1 items-center justify-center rounded-[15px] bg-canvas-light dark:bg-canvas-dark">
+                <Text className="text-sm font-bold text-ink-light dark:text-ink-dark">
+                  Cancel
+                </Text>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                disabled={isDeleting}
+                onPress={() => void confirmDelete()}
+                className="min-h-[48px] flex-1 items-center justify-center rounded-[15px] bg-[#A53F35] disabled:opacity-60">
+                <Text className="text-sm font-bold text-white">
+                  {isDeleting ? 'Deleting…' : 'Delete meal'}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {toast ? (
+        <Animated.View
+          entering={FadeInDown.duration(180)}
+          accessibilityRole="alert"
+          className="absolute bottom-5 left-5 right-5 self-center rounded-[16px] bg-[#202820] px-4 py-[13px]">
+          <Text className="text-center text-[12px] font-semibold text-white">{toast}</Text>
+        </Animated.View>
+      ) : null}
     </SafeAreaView>
   );
 }
