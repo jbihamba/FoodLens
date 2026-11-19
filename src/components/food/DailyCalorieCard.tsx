@@ -1,6 +1,7 @@
 import { Link } from 'expo-router';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 
+import { Pressable, Text } from '@/components/LocalizedText';
 import { CalorieProgressBar } from '@/components/food/CalorieProgressBar';
 import type { FoodEntry } from '@/services/calorieTracking';
 

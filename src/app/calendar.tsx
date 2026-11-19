@@ -1,9 +1,10 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
 
+import { Pressable, Text } from '@/components/LocalizedText';
 import {
   DEFAULT_DAILY_GOAL,
   getFoodEntriesForLocalDay,
@@ -11,8 +12,8 @@ import {
   type FoodEntry,
 } from '@/services/calorieTracking';
 import { useDailyCalories } from '@/stores/daily-calories';
+import { useAppSettings } from '@/stores/app-settings';
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 const MEAL_GROUPS = [
   { key: 'Breakfast', title: 'Breakfast', icon: '☀' },
   { key: 'Lunch', title: 'Lunch', icon: '◉' },
@@ -27,11 +28,11 @@ function getLocalDateKey(date: Date) {
   return `${year}-${month}-${day}`;
 }
 
-function formatTime(consumedAt: string) {
+function formatTime(consumedAt: string, locale: string) {
   const date = new Date(consumedAt);
   return Number.isNaN(date.getTime())
     ? 'Time unavailable'
-    : date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+    : date.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
 }
 
 function getMealGroup(mealType: string | null) {
@@ -44,7 +45,16 @@ function formatPercentage(value: number) {
 
 export default function CalendarScreen() {
   const db = useSQLiteContext();
+  const { settings } = useAppSettings();
   const { goal } = useDailyCalories();
+  const locale = settings.language === 'fr' ? 'fr-FR' : 'en-US';
+  const weekdays = useMemo(
+    () =>
+      Array.from({ length: 7 }, (_, index) =>
+        new Date(2024, 0, index + 1).toLocaleDateString(locale, { weekday: 'short' }),
+      ),
+    [locale],
+  );
   const [selectedDate, setSelectedDate] = useState(() => new Date());
   const [viewMonth, setViewMonth] = useState(() => {
     const now = new Date();
@@ -137,7 +147,7 @@ export default function CalendarScreen() {
   const dailyGoal = goal?.target_calories ?? DEFAULT_DAILY_GOAL;
   const completion = dailyGoal > 0 ? (totalCalories / dailyGoal) * 100 : 0;
   const todayKey = getLocalDateKey(new Date());
-  const selectedLabel = selectedDate.toLocaleDateString(undefined, {
+  const selectedLabel = selectedDate.toLocaleDateString(locale, {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -209,7 +219,7 @@ export default function CalendarScreen() {
               <Text className="text-[22px] text-ink-light dark:text-ink-dark">‹</Text>
             </Pressable>
             <Text className="text-[17px] font-bold text-ink-light dark:text-ink-dark">
-              {viewMonth.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })}
+              {viewMonth.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}
             </Text>
             <Pressable
               accessibilityRole="button"
@@ -221,7 +231,7 @@ export default function CalendarScreen() {
           </View>
 
           <View className="mb-2 flex-row">
-            {WEEKDAYS.map((weekday) => (
+            {weekdays.map((weekday) => (
               <View key={weekday} className="h-8 flex-1 items-center justify-center">
                 <Text className="text-[10px] font-semibold text-muted-light dark:text-muted-dark">
                   {weekday}
@@ -242,7 +252,7 @@ export default function CalendarScreen() {
                 <Pressable
                   key={dateKey}
                   accessibilityRole="button"
-                  accessibilityLabel={`${date.toLocaleDateString(undefined, {
+                  accessibilityLabel={`${date.toLocaleDateString(locale, {
                     month: 'long',
                     day: 'numeric',
                     year: 'numeric',
@@ -350,7 +360,7 @@ export default function CalendarScreen() {
                 Meal history
               </Text>
               <Text className="mt-1 text-[11px] text-muted-light dark:text-muted-dark">
-                {selectedDate.toLocaleDateString(undefined, { month: 'long', day: 'numeric' })}
+                {selectedDate.toLocaleDateString(locale, { month: 'long', day: 'numeric' })}
               </Text>
             </View>
             <Text className="text-[10px] font-bold tracking-[0.7px] text-brand-primary dark:text-[#A8C8B2]">
@@ -405,7 +415,7 @@ export default function CalendarScreen() {
                             {entry.food_name}
                           </Text>
                           <Text className="mt-1 text-[10px] text-muted-light dark:text-muted-dark">
-                            {formatTime(entry.consumed_at)}
+                            {formatTime(entry.consumed_at, locale)}
                           </Text>
                         </View>
                         <Text className="text-[11px] font-bold text-ink-light dark:text-ink-dark">

@@ -1,5 +1,6 @@
-import { Pressable, Text, View, type PressableProps } from 'react-native';
+import { View, type PressableProps } from 'react-native';
 
+import { Pressable, Text } from '@/components/LocalizedText';
 type FoodButtonProps = Omit<PressableProps, 'style' | 'className'> & {
   label: string;
   hint?: string;

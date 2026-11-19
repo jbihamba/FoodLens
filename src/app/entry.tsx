@@ -5,10 +5,7 @@ import {
   KeyboardAvoidingView,
   Modal,
   Platform,
-  Pressable,
   ScrollView,
-  Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -17,6 +14,7 @@ import Animated, { FadeInDown } from 'react-native-reanimated';
 
 import { BrandMark } from '@/components/food/BrandMark';
 import { FoodButton } from '@/components/food/FoodButton';
+import { Pressable, Text, TextInput } from '@/components/LocalizedText';
 import { StyledImage } from '@/components/nativewind-interop';
 import { getFoodEntry, type FoodEntry } from '@/services/calorieTracking';
 import { useDailyCalories } from '@/stores/daily-calories';

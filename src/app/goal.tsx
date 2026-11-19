@@ -1,10 +1,11 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { BrandMark } from '@/components/food/BrandMark';
 import { FoodButton } from '@/components/food/FoodButton';
+import { Pressable, Text, TextInput } from '@/components/LocalizedText';
 import { DEFAULT_DAILY_GOAL, MAX_DAILY_GOAL } from '@/services/calorieTracking';
 import { useDailyCalories } from '@/stores/daily-calories';
 

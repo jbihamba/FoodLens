@@ -3,9 +3,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Modal,
-  Pressable,
   ScrollView,
-  Text,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,9 +13,11 @@ import { DailyCalorieCard } from '@/components/food/DailyCalorieCard';
 import { BrandMark } from '@/components/food/BrandMark';
 import { FoodButton } from '@/components/food/FoodButton';
 import { MealDiary } from '@/components/food/MealDiary';
+import { Pressable, Text } from '@/components/LocalizedText';
 import { StyledImage } from '@/components/nativewind-interop';
 import { DEFAULT_DAILY_GOAL } from '@/services/calorieTracking';
 import type { FoodEntry } from '@/services/calorieTracking';
+import { useAppSettings } from '@/stores/app-settings';
 import { useDailyCalories } from '@/stores/daily-calories';
 
 const steps = [
@@ -39,6 +39,7 @@ const steps = [
 ];
 
 export default function HomeScreen() {
+  const { settings } = useAppSettings();
   const { goal, entries, isLoading, error, refresh, deleteEntry } = useDailyCalories();
   const consumed = entries.reduce((total, entry) => total + entry.calories, 0);
   const [pendingDelete, setPendingDelete] = useState<FoodEntry | null>(null);
@@ -101,16 +102,28 @@ export default function HomeScreen() {
               FoodLens
             </Text>
           </View>
-          <Link href="/calendar" asChild>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Open food calendar"
-              className="min-h-10 flex-row items-center justify-center rounded-full bg-brand-secondary px-4 dark:bg-selected-dark">
-              <Text className="text-xs font-bold text-brand-primary dark:text-[#A8C8B2]">
-                Calendar  →
-              </Text>
-            </Pressable>
-          </Link>
+          <View className="flex-row gap-2">
+            <Link href="/calendar" asChild>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Open food calendar"
+                className="min-h-10 flex-row items-center justify-center rounded-full bg-brand-secondary px-3 dark:bg-selected-dark">
+                <Text className="text-xs font-bold text-brand-primary dark:text-[#A8C8B2]">
+                  Calendar  →
+                </Text>
+              </Pressable>
+            </Link>
+            <Link href="/settings" asChild>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Settings"
+                className="min-h-10 flex-row items-center justify-center rounded-full bg-surface-light px-3 dark:bg-surface-dark">
+                <Text className="text-xs font-bold text-ink-light dark:text-ink-dark">
+                  ⚙
+                </Text>
+              </Pressable>
+            </Link>
+          </View>
         </View>
 
         <View className="pt-[29px]">
@@ -125,7 +138,9 @@ export default function HomeScreen() {
             <Text className="text-brand-primary dark:text-[#A8C8B2]">know more.</Text>
           </Text>
           <Text className="mt-[11px] text-[17px] leading-[25px] text-muted-light dark:text-muted-dark">
-            Discover what&apos;s on your plate.
+          {settings.profile.displayName
+            ? `Welcome, ${settings.profile.displayName}.`
+            : "Discover what's on your plate."}
           </Text>
 
           <DailyCalorieCard

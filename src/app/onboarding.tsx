@@ -1,9 +1,7 @@
 import { router } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import {
-  Pressable,
   ScrollView,
-  Text,
   useWindowDimensions,
   View,
   type NativeScrollEvent,
@@ -14,6 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
 
 import { BrandMark } from '@/components/food/BrandMark';
+import { Pressable, Text } from '@/components/LocalizedText';
 import { StyledImage } from '@/components/nativewind-interop';
 import { completeOnboarding } from '@/services/calorieTracking';
 

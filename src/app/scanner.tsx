@@ -5,11 +5,9 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Linking,
-  Pressable,
   Platform,
   ScrollView,
   StyleSheet,
-  Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -26,6 +24,7 @@ import Animated, {
 
 import { BrandMark } from "@/components/food/BrandMark";
 import { FoodButton } from "@/components/food/FoodButton";
+import { Pressable, Text } from "@/components/LocalizedText";
 import { StyledImage } from "@/components/nativewind-interop";
 import {
   FoodRecognitionError,
