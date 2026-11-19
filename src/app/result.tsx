@@ -8,7 +8,12 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { FadeIn, Layout } from 'react-native-reanimated';
+import Animated, {
+  FadeIn,
+  Layout,
+  useAnimatedStyle,
+  withSpring,
+} from 'react-native-reanimated';
 
 import { BrandMark } from '@/components/food/BrandMark';
 import { CalorieProgressBar } from '@/components/food/CalorieProgressBar';
@@ -22,6 +27,43 @@ import type { ScanSession } from '@/types/food';
 
 const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'] as const;
 type MealType = (typeof MEAL_TYPES)[number];
+
+const PORTION_OPTIONS = [
+  { key: 'small', label: 'Small', multiplier: 0.5 },
+  { key: 'medium', label: 'Medium', multiplier: 1 },
+  { key: 'large', label: 'Large', multiplier: 1.5 },
+] as const;
+type PortionSelection = (typeof PORTION_OPTIONS)[number]['key'] | 'custom';
+
+function getPortionGrams(portionSize: string | null) {
+  if (!portionSize) {
+    return null;
+  }
+
+  const quantity = portionSize.match(
+    /(\d+(?:[.,]\d+)?)\s*(kilograms?|kg|grams?|g|pounds?|lbs?|ounces?|oz)\b/i,
+  );
+  if (!quantity) {
+    return null;
+  }
+
+  const amount = Number(quantity[1].replace(',', '.'));
+  const unit = quantity[2].toLowerCase();
+  const grams =
+    /^(kg|kilograms?)$/.test(unit)
+      ? amount * 1000
+      : /^(lb|lbs|pound|pounds)$/.test(unit)
+        ? amount * 453.59237
+        : /^(oz|ounce|ounces)$/.test(unit)
+          ? amount * 28.3495
+          : amount;
+
+  return Number.isFinite(grams) && grams > 0 ? grams : null;
+}
+
+function formatGrams(grams: number) {
+  return `${Number.isInteger(grams) ? grams : Number(grams.toFixed(1))} g`;
+}
 
 function getPortionLabel(
   portionSize: string | null,
@@ -142,7 +184,8 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
   const { addEntry, goal, entries, isLoading: isDiaryLoading, error: diaryError } = useDailyCalories();
   const [foodName, setFoodName] = useState(scan?.analysis.foodName ?? '');
   const [mealType, setMealType] = useState<MealType | null>(null);
-  const [portionMultiplier, setPortionMultiplier] = useState(1);
+  const [portionSelection, setPortionSelection] = useState<PortionSelection>('medium');
+  const [customGrams, setCustomGrams] = useState('');
   const [isLogging, setIsLogging] = useState(false);
   const [logged, setLogged] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
@@ -165,7 +208,55 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
   };
 
   const baseCalories = scan?.analysis.estimatedCalories ?? null;
-  const calories = baseCalories === null ? null : Math.round(baseCalories * portionMultiplier);
+  const basePortionGrams = getPortionGrams(scan?.analysis.portionSize ?? null);
+  const customQuantity = Number(customGrams.replace(',', '.'));
+  const isCustomQuantityValid =
+    customGrams.trim().length > 0 &&
+    Number.isFinite(customQuantity) &&
+    customQuantity > 0 &&
+    customQuantity <= 10_000;
+  const presetMultiplier =
+    PORTION_OPTIONS.find((option) => option.key === portionSelection)?.multiplier ?? null;
+  const portionMultiplier =
+    portionSelection === 'custom'
+      ? isCustomQuantityValid && basePortionGrams !== null
+        ? customQuantity / basePortionGrams
+        : null
+      : presetMultiplier;
+  const calories =
+    baseCalories === null || portionMultiplier === null
+      ? null
+      : Math.round(baseCalories * portionMultiplier);
+  const selectedPortionLabel =
+    portionSelection === 'custom'
+      ? isCustomQuantityValid
+        ? formatGrams(customQuantity)
+        : 'Enter a quantity in grams'
+      : basePortionGrams !== null
+        ? formatGrams(basePortionGrams * (portionMultiplier ?? 1))
+        : getPortionLabel(
+            scan?.analysis.portionSize ?? null,
+            portionMultiplier ?? 1,
+            settings.units,
+          );
+  const portionVisualScale = Math.min(
+    1.4,
+    Math.max(0.7, portionMultiplier ?? 1),
+  );
+  const portionImageStyle = useAnimatedStyle(
+    () => ({
+      transform: [
+        {
+          scale: withSpring(portionVisualScale, {
+            damping: 14,
+            stiffness: 160,
+          }),
+        },
+      ],
+    }),
+    [portionVisualScale],
+  );
+
   const consumed = entries.reduce((total, entry) => total + entry.calories, 0);
   const dailyGoal = goal?.target_calories ?? null;
   const projectedCalories =
@@ -397,46 +488,101 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
 
               <View className="mt-4 rounded-[21px] border-[0.5px] border-selected-light bg-surface-light p-[17px] dark:border-selected-dark dark:bg-surface-dark">
                 <View className="flex-row items-center justify-between">
-                  <View className="flex-1 pr-3">
+                  <View>
                     <Text className="text-[10px] font-bold tracking-[1.1px] text-muted-light dark:text-muted-dark">
-                      ADJUST PORTION
+                      PORTION VISUALIZER
+                    </Text>
+                    <Text className="mt-[4px] text-[13px] font-semibold text-ink-light dark:text-ink-dark">
+                      Choose a serving size
+                    </Text>
+                  </View>
+                </View>
+
+                <View
+                  accessibilityLabel={`Visual portion preview: ${selectedPortionLabel}`}
+                  className="mt-4 min-h-[157px] flex-row items-center justify-center gap-5 rounded-[17px] bg-canvas-light px-4 py-3 dark:bg-canvas-dark">
+                  <View className="h-[128px] w-[128px] items-center justify-center rounded-full border-[7px] border-white bg-[#E4E8DE] dark:border-[#455249] dark:bg-[#303A33]">
+                    <Animated.View
+                      style={portionImageStyle}
+                      className="h-[92px] w-[92px] overflow-hidden rounded-full">
+                      <StyledImage
+                        source={{ uri: scan.imageUri }}
+                        contentFit="cover"
+                        className="h-full w-full"
+                      />
+                    </Animated.View>
+                  </View>
+                  <View className="flex-1">
+                    <Text className="text-[10px] font-bold tracking-[0.8px] text-muted-light dark:text-muted-dark">
+                      SELECTED PORTION
                     </Text>
                     <Text
                       numberOfLines={2}
-                      className="mt-[4px] text-[13px] font-semibold leading-[18px] text-ink-light dark:text-ink-dark">
-                      {getPortionLabel(
-                        scan.analysis.portionSize,
-                        portionMultiplier,
-                        settings.units,
-                      )}
+                      className="mt-1 text-[17px] font-bold leading-[21px] text-ink-light dark:text-ink-dark">
+                      {selectedPortionLabel}
                     </Text>
-                  </View>
-                  <View className="flex-row items-center gap-3">
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Decrease portion"
-                      accessibilityState={{ disabled: logged || portionMultiplier <= 0.5 }}
-                      disabled={logged || portionMultiplier <= 0.5}
-                      onPress={() => setPortionMultiplier((value) => Math.max(0.5, value - 0.5))}
-                      className="h-10 w-10 items-center justify-center rounded-full bg-canvas-light disabled:opacity-40 dark:bg-canvas-dark">
-                      <Text className="text-xl font-semibold text-ink-light dark:text-ink-dark">−</Text>
-                    </Pressable>
-                    <Text className="min-w-[39px] text-center text-sm font-bold text-ink-light dark:text-ink-dark">
-                      {portionMultiplier}×
+                    <Text className="mt-2 text-[10px] leading-[15px] text-muted-light dark:text-muted-dark">
+                      Estimate only
                     </Text>
-                    <Pressable
-                      accessibilityRole="button"
-                      accessibilityLabel="Increase portion"
-                      accessibilityState={{ disabled: logged || portionMultiplier >= 10 }}
-                      disabled={logged || portionMultiplier >= 10}
-                      onPress={() => setPortionMultiplier((value) => Math.min(10, value + 0.5))}
-                      className="h-10 w-10 items-center justify-center rounded-full bg-brand-secondary disabled:opacity-40 dark:bg-selected-dark">
-                      <Text className="text-xl font-semibold text-brand-primary dark:text-[#A8C8B2]">+</Text>
-                    </Pressable>
                   </View>
                 </View>
+
+                <View className="mt-3 flex-row gap-2">
+                  {[
+                    ...PORTION_OPTIONS,
+                    { key: 'custom' as const, label: 'Custom' },
+                  ].map((option) => {
+                    const selected = portionSelection === option.key;
+                    return (
+                      <Pressable
+                        key={option.key}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected, disabled: logged || isLogging }}
+                        disabled={logged || isLogging}
+                        onPress={() => setPortionSelection(option.key)}
+                        className={`min-h-[44px] flex-1 items-center justify-center rounded-[13px] border px-1 ${
+                          selected
+                            ? 'border-brand-primary bg-brand-primary'
+                            : 'border-brand-border bg-canvas-light dark:border-selected-dark dark:bg-canvas-dark'
+                        } disabled:opacity-55`}>
+                        <Text
+                          className={`text-[10px] font-bold ${
+                            selected
+                              ? 'text-white'
+                              : 'text-muted-light dark:text-muted-dark'
+                          }`}>
+                          {option.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                {portionSelection === 'custom' ? (
+                  <View className="mt-3 flex-row items-center rounded-[14px] border border-brand-border bg-canvas-light px-3 dark:border-selected-dark dark:bg-canvas-dark">
+                    <TextInput
+                      accessibilityLabel="Custom portion in grams"
+                      value={customGrams}
+                      onChangeText={setCustomGrams}
+                      editable={!logged && !isLogging}
+                      keyboardType="decimal-pad"
+                      maxLength={7}
+                      placeholder="Enter grams"
+                      placeholderTextColor="#68736B"
+                      className="h-[48px] flex-1 text-[14px] font-semibold text-ink-light dark:text-ink-dark"
+                    />
+                    <Text className="text-[12px] font-bold text-muted-light dark:text-muted-dark">
+                      g
+                    </Text>
+                  </View>
+                ) : null}
+
                 <Text className="mt-[10px] text-[10px] leading-[15px] text-muted-light dark:text-muted-dark">
-                  Calories scale proportionally from the original estimate. Portion size is approximate.
+                  {portionSelection === 'custom' && basePortionGrams === null
+                    ? 'This scan has no reference weight, so calories can’t be scaled to a custom gram amount.'
+                    : portionSelection === 'custom' && !isCustomQuantityValid
+                      ? 'Enter a quantity greater than 0 and no more than 10,000 g.'
+                      : 'Estimated portions: Small 0.5×, Medium 1×, Large 1.5× the scanned serving. Actual nutrition may vary.'}
                 </Text>
               </View>
 

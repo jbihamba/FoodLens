@@ -41,6 +41,15 @@ function isFoodAnalysis(value: unknown): value is FoodAnalysis {
   );
 }
 
+function isTimeoutError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const cause = error.cause instanceof Error ? `${error.cause.name}: ${error.cause.message}` : '';
+  return /\btimeout\b|\btimed out\b/i.test(`${error.name}: ${error.message} ${cause}`);
+}
+
 export async function analyzeFoodImage(imageBase64: string): Promise<FoodAnalysis> {
   if (!API_URL) {
     throw new FoodRecognitionError(
@@ -66,7 +75,7 @@ export async function analyzeFoodImage(imageBase64: string): Promise<FoodAnalysi
     const detail =
       error instanceof Error ? `${error.name}: ${error.message}` : 'Unknown network error';
     console.error('[food-recognition] Analysis request failed:', error);
-    if (controller.signal.aborted) {
+    if (controller.signal.aborted || isTimeoutError(error)) {
       throw new FoodRecognitionError(
         'Meal analysis timed out. Please check the server and try again.',
         'network',
