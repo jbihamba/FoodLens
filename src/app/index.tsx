@@ -101,9 +101,16 @@ export default function HomeScreen() {
               FoodLens
             </Text>
           </View>
-          <Text className="text-[9px] font-bold tracking-[1.4px] text-muted-light dark:text-muted-dark">
-            YOUR FOOD, IN FOCUS
-          </Text>
+          <Link href="/calendar" asChild>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Open food calendar"
+              className="min-h-10 flex-row items-center justify-center rounded-full bg-brand-secondary px-4 dark:bg-selected-dark">
+              <Text className="text-xs font-bold text-brand-primary dark:text-[#A8C8B2]">
+                Calendar  →
+              </Text>
+            </Pressable>
+          </Link>
         </View>
 
         <View className="pt-[29px]">

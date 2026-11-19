@@ -166,6 +166,19 @@ export async function getFoodEntriesForLocalDay(db: SQLiteDatabase, date = new D
   );
 }
 
+export async function getFoodEntriesForLocalMonth(db: SQLiteDatabase, date = new Date()) {
+  const start = new Date(date.getFullYear(), date.getMonth(), 1);
+  const end = new Date(date.getFullYear(), date.getMonth() + 1, 1);
+  return db.getAllAsync<FoodEntry>(
+    `SELECT id, food_name, calories, meal_type, image_uri, protein_g, carbs_g, fat_g, consumed_at
+     FROM food_entries
+     WHERE consumed_at >= ? AND consumed_at < ?
+     ORDER BY consumed_at DESC, id DESC`,
+    start.toISOString(),
+    end.toISOString(),
+  );
+}
+
 export async function getFoodEntry(db: SQLiteDatabase, id: number) {
   return db.getFirstAsync<FoodEntry>(
     `SELECT id, food_name, calories, meal_type, image_uri, protein_g, carbs_g, fat_g, consumed_at
