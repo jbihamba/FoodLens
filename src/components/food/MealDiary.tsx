@@ -1,6 +1,8 @@
-import { Pressable, Text, View } from 'react-native';
+import { View } from 'react-native';
 import Animated, { FadeIn } from 'react-native-reanimated';
 
+import { Pressable, Text } from '@/components/LocalizedText';
+import { useAppSettings } from '@/stores/app-settings';
 import { StyledImage } from '@/components/nativewind-interop';
 import type { FoodEntry } from '@/services/calorieTracking';
 
@@ -17,15 +19,17 @@ interface MealDiaryProps {
   onDelete: (entry: FoodEntry) => void;
 }
 
-function formatTime(consumedAt: string) {
+function formatTime(consumedAt: string, locale: string) {
   const date = new Date(consumedAt);
   if (Number.isNaN(date.getTime())) {
     return 'Time unavailable';
   }
-  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  return date.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
 }
 
 export function MealDiary({ entries, onEdit, onDelete }: MealDiaryProps) {
+  const { settings } = useAppSettings();
+  const locale = settings.language === 'fr' ? 'fr-FR' : 'en-US';
   const groupEntries = new Map<string, FoodEntry[]>();
   for (const group of MEAL_GROUPS) {
     groupEntries.set(group.key, []);
@@ -124,7 +128,7 @@ export function MealDiary({ entries, onEdit, onDelete }: MealDiaryProps) {
                             {entry.food_name}
                           </Text>
                           <Text className="mt-1 text-[10px] text-muted-light dark:text-muted-dark">
-                            {formatTime(entry.consumed_at)}
+                            {formatTime(entry.consumed_at, locale)}
                           </Text>
                         </View>
                       </Pressable>

@@ -1,4 +1,5 @@
-import { Text, type TextProps } from 'react-native';
+import { Text } from '@/components/LocalizedText';
+import type { TextProps } from 'react-native';
 
 export type ThemedTextProps = Omit<TextProps, 'style' | 'className'> & {
   type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code';

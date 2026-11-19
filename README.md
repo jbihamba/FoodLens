@@ -20,6 +20,8 @@ The interface uses NativeWind/Tailwind utility classes across iOS, Android, and 
 
 Daily calorie goals and logged meals are stored locally in the `foodlens.db` SQLite database. The app starts with a 2,000 kcal goal; scan a meal and choose **Log this meal** to include its estimate in today's total. Edit or remove today's entries from the home screen, or change the goal with **Edit** on the Daily Goal card. Meal timestamps are stored in ISO 8601 UTC and grouped by the device's local calendar day.
 Open **Calendar** on the home screen to browse monthly meal history, daily calorie totals, and goal completion. Calendar history is read from the same local database and does not change existing meals.
+
+Open **Settings** from the home screen to choose light, dark, or system appearance; English or French; and metric or imperial serving-size units. Preferences and the editable display profile are saved locally in the existing SQLite database. Calories remain in kcal and nutrient quantities remain in grams regardless of the serving-size unit preference. Clearing local data requires confirmation, removes meal history and profile details, and resets the daily goal while preserving appearance, language, unit, and onboarding preferences. The storage estimate covers meal records and does not include cached image files or SQLite overhead. Meal photos are sent to the configured recognition service for analysis; that service may forward images to Google.
 Web development and Expo Hosting are configured with the cross-origin isolation headers required by Expo SQLite.
 
 ## Recognition API

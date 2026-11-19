@@ -4,10 +4,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  Pressable,
   ScrollView,
-  Text,
-  TextInput,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,7 +13,9 @@ import Animated, { FadeIn, Layout } from 'react-native-reanimated';
 import { BrandMark } from '@/components/food/BrandMark';
 import { CalorieProgressBar } from '@/components/food/CalorieProgressBar';
 import { FoodButton } from '@/components/food/FoodButton';
+import { Pressable, Text, TextInput } from '@/components/LocalizedText';
 import { StyledImage } from '@/components/nativewind-interop';
+import { useAppSettings } from '@/stores/app-settings';
 import { useDailyCalories } from '@/stores/daily-calories';
 import { useScanSession } from '@/stores/scan-session';
 import type { ScanSession } from '@/types/food';
@@ -24,18 +23,71 @@ import type { ScanSession } from '@/types/food';
 const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'] as const;
 type MealType = (typeof MEAL_TYPES)[number];
 
-function getPortionLabel(portionSize: string | null, multiplier: number) {
+function getPortionLabel(
+  portionSize: string | null,
+  multiplier: number,
+  units: 'metric' | 'imperial',
+) {
   if (!portionSize) {
     return `${multiplier}× estimated portion`;
   }
 
-  const quantity = portionSize.match(/(\d+(?:\.\d+)?)\s*(g|grams?|ml|milliliters?|oz|ounces?)\b/i);
+  const quantity = portionSize.match(
+    /(\d+(?:\.\d+)?)\s*(kilograms?|kg|grams?|g|pounds?|lbs?|ounces?|oz|milliliters?|ml|liters?|litres?|l|fluid ounces?|fl oz|cups?)\b/i,
+  );
   if (quantity) {
-    const scaledQuantity = Number(quantity[1]) * multiplier;
-    const formattedQuantity = Number.isInteger(scaledQuantity)
-      ? String(scaledQuantity)
-      : scaledQuantity.toFixed(1);
-    return portionSize.replace(quantity[0], `${formattedQuantity} ${quantity[2]}`);
+    const sourceAmount = Number(quantity[1]) * multiplier;
+    const sourceUnit = quantity[2].toLowerCase();
+    const isMetricMass = /^(kg|kilograms?|g|grams?)$/.test(sourceUnit);
+    const isImperialMass = /^(oz|ounces?|lbs?|pounds?)$/.test(sourceUnit);
+    const isMetricVolume = /^(ml|milliliters?|l|liters?|litres?)$/.test(sourceUnit);
+    const isImperialVolume = /^(fl oz|fluid ounces?)$/.test(sourceUnit);
+    let amount = sourceAmount;
+    let unit = quantity[2];
+
+    if (units === 'imperial' && isMetricMass) {
+      const grams = sourceAmount * (/^(kg|kilograms?)$/.test(sourceUnit) ? 1000 : 1);
+      amount = grams / 28.3495;
+      unit = 'oz';
+      if (amount >= 16) {
+        amount /= 16;
+        unit = 'lb';
+      }
+    } else if (units === 'imperial' && (isMetricVolume || /^cups?$/.test(sourceUnit))) {
+      const milliliters = sourceAmount * (
+        /^cups?$/.test(sourceUnit)
+          ? 236.588
+          : /^(l|liters?|litres?)$/.test(sourceUnit)
+            ? 1000
+            : 1
+      );
+      amount = milliliters / 29.5735;
+      unit = 'fl oz';
+    } else if (units === 'metric' && isImperialMass) {
+      const grams = sourceAmount * (/^(lb|lbs|pound|pounds)$/.test(sourceUnit) ? 453.59237 : 28.3495);
+      amount = grams;
+      unit = 'g';
+      if (amount >= 1000) {
+        amount /= 1000;
+        unit = 'kg';
+      }
+    } else if (units === 'metric' && isImperialVolume) {
+      amount = sourceAmount * 29.5735;
+      unit = 'ml';
+    } else if (units === 'metric' && /^cups?$/.test(sourceUnit)) {
+      amount = sourceAmount * 236.588;
+      unit = 'ml';
+    } else if (units === 'metric' && /^(l|liters?|litres?)$/.test(sourceUnit)) {
+      unit = 'L';
+    } else if (units === 'imperial' && isMetricVolume && /^(l|liters?|litres?)$/.test(sourceUnit)) {
+      amount = sourceAmount * 33.814;
+      unit = 'fl oz';
+    }
+
+    const formattedAmount = Number.isInteger(amount)
+      ? String(amount)
+      : amount.toFixed(amount < 10 ? 2 : 1);
+    return portionSize.replace(quantity[0], `${formattedAmount} ${unit}`);
   }
 
   return multiplier === 1 ? portionSize : `${multiplier}× ${portionSize}`;
@@ -86,6 +138,7 @@ export default function ResultScreen() {
 }
 
 function ResultContent({ scan }: { scan: ScanSession | null }) {
+  const { settings } = useAppSettings();
   const { addEntry, goal, entries, isLoading: isDiaryLoading, error: diaryError } = useDailyCalories();
   const [foodName, setFoodName] = useState(scan?.analysis.foodName ?? '');
   const [mealType, setMealType] = useState<MealType | null>(null);
@@ -351,7 +404,11 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
                     <Text
                       numberOfLines={2}
                       className="mt-[4px] text-[13px] font-semibold leading-[18px] text-ink-light dark:text-ink-dark">
-                      {getPortionLabel(scan.analysis.portionSize, portionMultiplier)}
+                      {getPortionLabel(
+                        scan.analysis.portionSize,
+                        portionMultiplier,
+                        settings.units,
+                      )}
                     </Text>
                   </View>
                   <View className="flex-row items-center gap-3">

@@ -1,8 +1,9 @@
 import { router, Stack, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, View } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
 
+import { Pressable, Text } from '@/components/LocalizedText';
 import { hasCompletedOnboarding } from '@/services/calorieTracking';
 
 type GateState = 'checking' | 'onboarding' | 'complete' | 'error';
