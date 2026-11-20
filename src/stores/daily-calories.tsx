@@ -21,6 +21,7 @@ import {
   type FoodEntry,
   type FoodEntryInput,
 } from '@/services/calorieTracking';
+import { useTips } from '@/stores/tips';
 
 interface DailyCaloriesContextValue {
   goal: DailyGoal | null;
@@ -38,6 +39,7 @@ const DailyCaloriesContext = createContext<DailyCaloriesContextValue | null>(nul
 
 export function DailyCaloriesProvider({ children }: PropsWithChildren) {
   const db = useSQLiteContext();
+  const { refreshTips } = useTips();
   const [goal, setGoalState] = useState<DailyGoal | null>(null);
   const [entries, setEntries] = useState<FoodEntry[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,6 +61,14 @@ export function DailyCaloriesProvider({ children }: PropsWithChildren) {
       setIsLoading(false);
     }
   }, [db]);
+
+  const refreshTipsAfterDataChange = useCallback(async () => {
+    try {
+      await refreshTips();
+    } catch (cause) {
+      console.error('[tips] Could not refresh after calorie data changed:', cause);
+    }
+  }, [refreshTips]);
 
   useEffect(() => {
     void Promise.resolve()
@@ -94,33 +104,37 @@ export function DailyCaloriesProvider({ children }: PropsWithChildren) {
     async (calories: number) => {
       await persistDailyGoal(db, calories);
       await refresh();
+      await refreshTipsAfterDataChange();
     },
-    [db, refresh],
+    [db, refresh, refreshTipsAfterDataChange],
   );
 
   const addEntry = useCallback(
     async (entry: FoodEntryInput) => {
       const id = await insertFoodEntry(db, entry);
       await refresh();
+      await refreshTipsAfterDataChange();
       return id;
     },
-    [db, refresh],
+    [db, refresh, refreshTipsAfterDataChange],
   );
 
   const updateEntry = useCallback(
     async (id: number, entry: FoodEntryInput) => {
       await persistFoodEntry(db, id, entry);
       await refresh();
+      await refreshTipsAfterDataChange();
     },
-    [db, refresh],
+    [db, refresh, refreshTipsAfterDataChange],
   );
 
   const deleteEntry = useCallback(
     async (id: number) => {
       await removeFoodEntry(db, id);
       await refresh();
+      await refreshTipsAfterDataChange();
     },
-    [db, refresh],
+    [db, refresh, refreshTipsAfterDataChange],
   );
 
   const value = useMemo(
@@ -135,7 +149,17 @@ export function DailyCaloriesProvider({ children }: PropsWithChildren) {
       updateEntry,
       deleteEntry,
     }),
-    [goal, entries, isLoading, error, refresh, setGoal, addEntry, updateEntry, deleteEntry],
+    [
+      goal,
+      entries,
+      isLoading,
+      error,
+      refresh,
+      setGoal,
+      addEntry,
+      updateEntry,
+      deleteEntry,
+    ],
   );
 
   return <DailyCaloriesContext.Provider value={value}>{children}</DailyCaloriesContext.Provider>;

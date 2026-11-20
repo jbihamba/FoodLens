@@ -7,8 +7,12 @@ import { CalorieRing } from '@/components/food/CalorieRing';
 import { MealCard } from '@/components/food/MealCard';
 import { ScanButton } from '@/components/food/ScanButton';
 import { Pressable, Text } from '@/components/LocalizedText';
+import { TipsCard, TipsEmptyState } from '@/components/TipsCard';
+import { translateTip } from '@/i18n/tips';
 import { DEFAULT_DAILY_GOAL, type FoodEntry } from '@/services/calorieTracking';
 import { useDailyCalories } from '@/stores/daily-calories';
+import { useAppSettings } from '@/stores/app-settings';
+import { useTips } from '@/stores/tips';
 
 function MacroValue({ label, value }: { label: string; value: number | null }) {
   return (
@@ -25,6 +29,8 @@ function MacroValue({ label, value }: { label: string; value: number | null }) {
 
 export default function HomeScreen() {
   const { goal, entries, isLoading, error, refresh, deleteEntry } = useDailyCalories();
+  const { tips, stats, error: tipsError, refreshTips, dismissTip } = useTips();
+  const { settings } = useAppSettings();
   const [pendingDelete, setPendingDelete] = useState<FoodEntry | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -156,6 +162,53 @@ export default function HomeScreen() {
               Les macros s’affichent lorsqu’elles sont disponibles pour un repas.
             </Text>
           ) : null}
+        </View>
+
+        <View className="mt-6">
+          <View className="mb-3 flex-row items-center justify-between">
+            <Text className="text-[17px] font-bold text-ink-light dark:text-ink-dark">
+              {translateTip('tips.ui.day', settings.language)}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={translateTip('tips.ui.seeAll', settings.language)}
+              onPress={() => router.push('/stats')}
+              className="min-h-11 justify-center px-2">
+              <Text className="text-[12px] font-bold text-brand-primary dark:text-[#A8C8B2]">
+                {translateTip('tips.ui.seeAll', settings.language)}
+              </Text>
+            </Pressable>
+          </View>
+          {tipsError ? (
+            <View>
+              <Text accessibilityRole="alert" className="mb-2 text-[12px] text-[#A53F35]">
+                {translateTip('tips.ui.error', settings.language)}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={translateTip('tips.ui.retry', settings.language)}
+                onPress={() => void refreshTips().catch(() => undefined)}
+                className="min-h-11 justify-center">
+                <Text className="text-[12px] font-bold text-brand-primary dark:text-[#A8C8B2]">
+                  {translateTip('tips.ui.retry', settings.language)}
+                </Text>
+              </Pressable>
+            </View>
+          ) : tips.length ? (
+            <TipsCard
+              tip={tips[0]}
+              onDismiss={(ruleId) => void dismissTip(ruleId).catch(() => undefined)}
+            />
+          ) : (
+            <TipsEmptyState
+              message={translateTip(
+                stats && stats.current.trackedDays < 3
+                  ? 'tips.ui.insufficient'
+                  : 'tips.ui.empty',
+                settings.language,
+              )}
+            />
+          )}
         </View>
 
         <View className="mt-6">
