@@ -1,6 +1,7 @@
 import '../global.css';
 
 import { SQLiteProvider } from 'expo-sqlite';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { initializeCalorieDatabase } from '@/services/calorieTracking';
 import { AppSettingsProvider } from '@/stores/app-settings';
@@ -10,14 +11,16 @@ import { OnboardingGate } from '@/components/OnboardingGate';
 
 export default function RootLayout() {
   return (
-    <SQLiteProvider databaseName="foodlens.db" onInit={initializeCalorieDatabase}>
-      <AppSettingsProvider>
-        <ScanSessionProvider>
-          <DailyCaloriesProvider>
-            <OnboardingGate />
-          </DailyCaloriesProvider>
-        </ScanSessionProvider>
-      </AppSettingsProvider>
-    </SQLiteProvider>
+    <SafeAreaProvider>
+      <SQLiteProvider databaseName="foodlens.db" onInit={initializeCalorieDatabase}>
+        <AppSettingsProvider>
+          <ScanSessionProvider>
+            <DailyCaloriesProvider>
+              <OnboardingGate />
+            </DailyCaloriesProvider>
+          </ScanSessionProvider>
+        </AppSettingsProvider>
+      </SQLiteProvider>
+    </SafeAreaProvider>
   );
 }

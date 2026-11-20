@@ -2,8 +2,10 @@ import { router, Stack, usePathname } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, View } from 'react-native';
 import { useSQLiteContext } from 'expo-sqlite';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Pressable, Text } from '@/components/LocalizedText';
+import { ScanFab } from '@/components/food/ScanButton';
 import { hasCompletedOnboarding } from '@/services/calorieTracking';
 
 type GateState = 'checking' | 'onboarding' | 'complete' | 'error';
@@ -11,6 +13,7 @@ type GateState = 'checking' | 'onboarding' | 'complete' | 'error';
 export function OnboardingGate() {
   const db = useSQLiteContext();
   const pathname = usePathname();
+  const insets = useSafeAreaInsets();
   const [state, setState] = useState<GateState>('checking');
   const [error, setError] = useState<string | null>(null);
   const [retry, setRetry] = useState(0);
@@ -55,8 +58,31 @@ export function OnboardingGate() {
   return (
     <View className="flex-1">
       <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="scanner" options={{ presentation: 'fullScreenModal' }} />
+        <Stack.Screen
+          name="result"
+          options={{
+            presentation: 'formSheet',
+            sheetAllowedDetents: [0.92],
+            sheetGrabberVisible: true,
+          }}
+        />
         <Stack.Screen name="onboarding" options={{ animation: 'fade' }} />
       </Stack>
+      {state === 'complete' &&
+      !['/', '/journal', '/stats', '/profile', '/scanner', '/result', '/onboarding'].includes(
+        pathname,
+      ) ? (
+        <View pointerEvents="box-none" className="absolute inset-0">
+          <View
+            pointerEvents="box-none"
+            className="absolute right-5"
+            style={{ bottom: Math.max(insets.bottom, 16) + 12 }}>
+            <ScanFab onPress={() => router.push('/scanner')} />
+          </View>
+        </View>
+      ) : null}
       {state === 'checking' || (state === 'onboarding' && pathname !== '/onboarding') ? (
         <View className="absolute inset-0 items-center justify-center bg-canvas-light dark:bg-canvas-dark">
           <ActivityIndicator color="#245C45" />
