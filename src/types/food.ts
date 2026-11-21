@@ -11,4 +11,3 @@ export interface ScanSession {
   imageUri: string;
   analysis: FoodAnalysis;
 }
-

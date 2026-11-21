@@ -1,17 +1,17 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import { TIP_THRESHOLDS } from '@/constants/tips';
+import { TIP_THRESHOLDS } from "@/constants/tips";
 
-import type { TipHistory } from './types';
+import type { TipHistory } from "./types";
 
-const HISTORY_STORAGE_KEY = 'foodlens.tips.history.v1';
+const HISTORY_STORAGE_KEY = "foodlens.tips.history.v1";
 
 function isStringRecord(value: unknown): value is Record<string, string> {
   return (
-    typeof value === 'object' &&
+    typeof value === "object" &&
     value !== null &&
     !Array.isArray(value) &&
-    Object.values(value).every((item) => typeof item === 'string')
+    Object.values(value).every((item) => typeof item === "string")
   );
 }
 
@@ -28,21 +28,21 @@ function parseTipHistory(serialized: string | null): TipHistory {
   try {
     value = JSON.parse(serialized);
   } catch (cause) {
-    throw new Error('Saved tip history is invalid JSON.', { cause });
+    throw new Error("Saved tip history is invalid JSON.", { cause });
   }
 
   if (
-    typeof value !== 'object' ||
+    typeof value !== "object" ||
     value === null ||
-    !('lastShownAt' in value) ||
-    !('dismissedUntil' in value) ||
-    !('activeRuleIds' in value) ||
+    !("lastShownAt" in value) ||
+    !("dismissedUntil" in value) ||
+    !("activeRuleIds" in value) ||
     !isStringRecord(value.lastShownAt) ||
     !isStringRecord(value.dismissedUntil) ||
     !Array.isArray(value.activeRuleIds) ||
-    !value.activeRuleIds.every((ruleId) => typeof ruleId === 'string')
+    !value.activeRuleIds.every((ruleId) => typeof ruleId === "string")
   ) {
-    throw new Error('Saved tip history has an unsupported format.');
+    throw new Error("Saved tip history has an unsupported format.");
   }
 
   return {
@@ -72,7 +72,9 @@ export async function dismissTipRule(ruleId: string, now = new Date()) {
       ...history.dismissedUntil,
       [ruleId]: dismissedUntil,
     },
-    activeRuleIds: history.activeRuleIds.filter((activeId) => activeId !== ruleId),
+    activeRuleIds: history.activeRuleIds.filter(
+      (activeId) => activeId !== ruleId,
+    ),
   };
   await writeTipHistory(updated);
 }

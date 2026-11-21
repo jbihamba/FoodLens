@@ -1,9 +1,9 @@
-import { Link } from 'expo-router';
-import { ActivityIndicator, View } from 'react-native';
+import { Link } from "expo-router";
+import { ActivityIndicator, View } from "react-native";
 
-import { Pressable, Text } from '@/components/LocalizedText';
-import { CalorieProgressBar } from '@/components/food/CalorieProgressBar';
-import type { FoodEntry } from '@/services/calorieTracking';
+import { Pressable, Text } from "@/components/LocalizedText";
+import { CalorieProgressBar } from "@/components/food/CalorieProgressBar";
+import type { FoodEntry } from "@/services/calorieTracking";
 
 interface DailyCalorieCardProps {
   goal: number;
@@ -38,7 +38,8 @@ export function DailyCalorieCard({
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Edit daily calorie goal"
-            className="rounded-[13px] bg-brand-secondary px-[13px] py-[9px]">
+            className="rounded-[13px] bg-brand-secondary px-[13px] py-[9px]"
+          >
             <Text className="text-xs font-bold text-brand-primary">Edit</Text>
           </Pressable>
         </Link>
@@ -58,11 +59,17 @@ export function DailyCalorieCard({
               {consumed.toLocaleString()} / {safeGoal.toLocaleString()} kcal
             </Text>
             <Text className="text-xs font-bold text-brand-primary dark:text-[#A8C8B2]">
-              {percentage.toLocaleString(undefined, { maximumFractionDigits: 1 })}%
+              {percentage.toLocaleString(undefined, {
+                maximumFractionDigits: 1,
+              })}
+              %
             </Text>
           </View>
           <View className="mt-[11px]">
-            <CalorieProgressBar progress={percentage} isGoalReached={isGoalReached} />
+            <CalorieProgressBar
+              progress={percentage}
+              isGoalReached={isGoalReached}
+            />
           </View>
           {isGoalReached ? (
             <View className="mt-[12px] flex-row items-center gap-[7px]">
@@ -70,7 +77,7 @@ export function DailyCalorieCard({
               <Text className="text-xs font-bold text-[#A53F35] dark:text-[#F2A097]">
                 {consumed > safeGoal
                   ? `Over goal by ${(consumed - safeGoal).toLocaleString()} kcal`
-                  : 'Daily goal reached'}
+                  : "Daily goal reached"}
               </Text>
             </View>
           ) : (

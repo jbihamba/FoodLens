@@ -1,14 +1,14 @@
-import type { SQLiteDatabase } from 'expo-sqlite';
+import type { SQLiteDatabase } from "expo-sqlite";
 
-import { TIP_REFERENCE_GOALS } from '@/constants/tips';
-import { DEFAULT_DAILY_GOAL, getDailyGoal } from '@/services/calorieTracking';
+import { TIP_REFERENCE_GOALS } from "@/constants/tips";
+import { DEFAULT_DAILY_GOAL, getDailyGoal } from "@/services/calorieTracking";
 
 import type {
   TipDayStats,
   TipMetricStats,
   TipPeriodStats,
   TipStats,
-} from './types';
+} from "./types";
 
 interface FoodTipRow {
   consumed_at: string;
@@ -27,8 +27,8 @@ interface WaterTipRow {
 
 function localDateKey(date: Date) {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
@@ -52,14 +52,14 @@ function finiteOrNull(value: number | null | undefined) {
 
 function classifyMeal(mealType: string | null, consumedAt: string) {
   const type = mealType?.trim().toLowerCase();
-  if (type === 'breakfast') return 'morning';
-  if (type === 'lunch') return 'midday';
-  if (type === 'dinner') return 'evening';
+  if (type === "breakfast") return "morning";
+  if (type === "lunch") return "midday";
+  if (type === "dinner") return "evening";
 
   const hour = new Date(consumedAt).getHours();
-  if (hour < 11) return 'morning';
-  if (hour < 16) return 'midday';
-  return 'evening';
+  if (hour < 11) return "morning";
+  if (hour < 16) return "midday";
+  return "evening";
 }
 
 function createDay(date: string): TipDayStats {
@@ -87,7 +87,9 @@ function summarizeMetric(
   const total = knownValues.reduce((sum, value) => sum + value, 0);
   return {
     total: knownValues.length ? total : null,
-    averagePerDay: knownValues.length ? total / (denominator ?? knownValues.length) : null,
+    averagePerDay: knownValues.length
+      ? total / (denominator ?? knownValues.length)
+      : null,
     trackedDays: knownValues.length,
   };
 }
@@ -121,9 +123,7 @@ function createPeriod(
   waterGoal: number,
 ): TipPeriodStats {
   const trackedDays = days.filter((day) => day.mealCount > 0);
-  const proteins = summarizeMetric(
-    days.map((day) => day.proteinGrams),
-  );
+  const proteins = summarizeMetric(days.map((day) => day.proteinGrams));
   const carbohydrates = summarizeMetric(
     days.map((day) => day.carbohydrateGrams),
   );
@@ -149,7 +149,9 @@ function createPeriod(
     trackedDays: trackedDays.length,
     calories: {
       total: trackedDays.length ? calorieTotal : null,
-      averagePerDay: trackedDays.length ? calorieTotal / trackedDays.length : null,
+      averagePerDay: trackedDays.length
+        ? calorieTotal / trackedDays.length
+        : null,
       trackedDays: trackedDays.length,
     },
     proteins,
@@ -166,14 +168,19 @@ function createPeriod(
       midday: days.reduce((sum, day) => sum + day.middayMeals, 0),
       evening: days.reduce((sum, day) => sum + day.eveningMeals, 0),
     },
-    daysAboveCalorieGoal: trackedDays.filter((day) => day.calories > calorieGoal).length,
-    daysAtOrAboveCalorieGoal: trackedDays.filter((day) => day.calories >= calorieGoal).length,
+    daysAboveCalorieGoal: trackedDays.filter(
+      (day) => day.calories > calorieGoal,
+    ).length,
+    daysAtOrAboveCalorieGoal: trackedDays.filter(
+      (day) => day.calories >= calorieGoal,
+    ).length,
     daysBelowSeventyPercentCalorieGoal: trackedDays.filter(
       (day) => day.calories < calorieGoal * 0.7,
     ).length,
     proteinGoalDays,
     waterGoalDays,
-    breakfastMissingDays: trackedDays.filter((day) => day.breakfastCount === 0).length,
+    breakfastMissingDays: trackedDays.filter((day) => day.breakfastCount === 0)
+      .length,
     trackingGapDays: days.length - trackedDays.length,
     currentTrackingGapDays: endingGap(days),
     longestTrackingGapDays: longestGap(days),
@@ -199,10 +206,10 @@ export async function getTipStats(db: SQLiteDatabase, now = new Date()) {
   const dayMap = new Map(allDates.map((date) => [date, createDay(date)]));
 
   const columns = await db.getAllAsync<{ name: string }>(
-    'PRAGMA table_info(food_entries)',
+    "PRAGMA table_info(food_entries)",
   );
-  const hasFiberColumn = columns.some((column) => column.name === 'fiber_g');
-  const fiberProjection = hasFiberColumn ? ', fiber_g' : '';
+  const hasFiberColumn = columns.some((column) => column.name === "fiber_g");
+  const fiberProjection = hasFiberColumn ? ", fiber_g" : "";
   const foodRows = await db.getAllAsync<FoodTipRow>(
     `SELECT consumed_at, meal_type, calories, protein_g, carbs_g, fat_g${fiberProjection}
      FROM food_entries
@@ -230,29 +237,30 @@ export async function getTipStats(db: SQLiteDatabase, now = new Date()) {
     }
     if (fat !== null) day.fatGrams = (day.fatGrams ?? 0) + fat;
     if (fiber !== null) day.fiberGrams = (day.fiberGrams ?? 0) + fiber;
-    if (entry.meal_type?.trim().toLowerCase() === 'breakfast') day.breakfastCount += 1;
+    if (entry.meal_type?.trim().toLowerCase() === "breakfast")
+      day.breakfastCount += 1;
 
     const period = classifyMeal(entry.meal_type, entry.consumed_at);
-    if (period === 'morning') day.morningMeals += 1;
-    else if (period === 'midday') day.middayMeals += 1;
+    if (period === "morning") day.morningMeals += 1;
+    else if (period === "midday") day.middayMeals += 1;
     else day.eveningMeals += 1;
   }
 
-  let waterColumn: 'consumed_at' | 'created_at' | null = null;
+  let waterColumn: "consumed_at" | "created_at" | null = null;
   const waterTable = await db.getFirstAsync<{ name: string }>(
     "SELECT name FROM sqlite_master WHERE type = 'table' AND name = ?",
-    'water_logs',
+    "water_logs",
   );
   if (waterTable) {
     const waterColumns = await db.getAllAsync<{ name: string }>(
-      'PRAGMA table_info(water_logs)',
+      "PRAGMA table_info(water_logs)",
     );
     const names = new Set(waterColumns.map((column) => column.name));
-    if (names.has('amount_ml')) {
-      waterColumn = names.has('consumed_at')
-        ? 'consumed_at'
-        : names.has('created_at')
-          ? 'created_at'
+    if (names.has("amount_ml")) {
+      waterColumn = names.has("consumed_at")
+        ? "consumed_at"
+        : names.has("created_at")
+          ? "created_at"
           : null;
     }
   }
@@ -279,11 +287,21 @@ export async function getTipStats(db: SQLiteDatabase, now = new Date()) {
   const days = allDates.map((date) => dayMap.get(date)!);
   const dailyGoal = await getDailyGoal(db);
   const calorieGoal =
-    dailyGoal && Number.isFinite(dailyGoal.target_calories) && dailyGoal.target_calories > 0
+    dailyGoal &&
+    Number.isFinite(dailyGoal.target_calories) &&
+    dailyGoal.target_calories > 0
       ? dailyGoal.target_calories
       : DEFAULT_DAILY_GOAL;
-  const current = createPeriod(days.slice(7), calorieGoal, TIP_REFERENCE_GOALS.waterMillilitersPerDay);
-  const previous = createPeriod(days.slice(0, 7), calorieGoal, TIP_REFERENCE_GOALS.waterMillilitersPerDay);
+  const current = createPeriod(
+    days.slice(7),
+    calorieGoal,
+    TIP_REFERENCE_GOALS.waterMillilitersPerDay,
+  );
+  const previous = createPeriod(
+    days.slice(0, 7),
+    calorieGoal,
+    TIP_REFERENCE_GOALS.waterMillilitersPerDay,
+  );
 
   const stats: TipStats = {
     current,
@@ -298,7 +316,9 @@ export async function getTipStats(db: SQLiteDatabase, now = new Date()) {
       dailyCalories: calorieGoal,
       proteinGrams: TIP_REFERENCE_GOALS.proteinGramsPerDay,
       fiberGrams: hasFiberColumn ? TIP_REFERENCE_GOALS.fiberGramsPerDay : null,
-      waterMilliliters: waterColumn ? TIP_REFERENCE_GOALS.waterMillilitersPerDay : null,
+      waterMilliliters: waterColumn
+        ? TIP_REFERENCE_GOALS.waterMillilitersPerDay
+        : null,
     },
   };
 }

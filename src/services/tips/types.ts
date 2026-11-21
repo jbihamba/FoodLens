@@ -1,10 +1,10 @@
-import type { TipTextKey, TipTranslationParams } from '@/i18n/tips';
+import type { TipTextKey, TipTranslationParams } from "@/i18n/tips";
 
-export type TipSeverity = 'info' | 'positive' | 'attention';
+export type TipSeverity = "info" | "positive" | "attention";
 
 export interface TipAction {
   labelKey: TipTextKey;
-  target: 'entry' | 'calendar';
+  target: "entry" | "calendar";
 }
 
 export interface Tip {

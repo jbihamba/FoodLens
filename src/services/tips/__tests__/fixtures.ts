@@ -1,11 +1,10 @@
-import type { TipPeriodStats, TipStats } from '../types';
+import type { TipPeriodStats, TipStats } from "../types";
 
-export const TEST_DATE = '2025-01-15T12:00:00.000Z';
+export const TEST_DATE = "2025-01-15T12:00:00.000Z";
 
 export function metric(averagePerDay: number | null, trackedDays = 7) {
   return {
-    total:
-      averagePerDay === null ? null : averagePerDay * trackedDays,
+    total: averagePerDay === null ? null : averagePerDay * trackedDays,
     averagePerDay,
     trackedDays: averagePerDay === null ? 0 : trackedDays,
   };
@@ -14,7 +13,7 @@ export function metric(averagePerDay: number | null, trackedDays = 7) {
 function makePeriod(overrides: Partial<TipPeriodStats> = {}): TipPeriodStats {
   const base: TipPeriodStats = {
     days: Array.from({ length: 7 }, (_, index) => ({
-      date: `2025-01-${String(index + 1).padStart(2, '0')}`,
+      date: `2025-01-${String(index + 1).padStart(2, "0")}`,
       mealCount: 3,
       calories: 1800,
       proteinGrams: 50,

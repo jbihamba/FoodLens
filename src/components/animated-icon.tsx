@@ -1,12 +1,12 @@
-import * as SplashScreen from 'expo-splash-screen';
-import { useState } from 'react';
-import { Dimensions, View } from 'react-native';
-import { Easing, Keyframe } from 'react-native-reanimated';
-import { scheduleOnRN } from 'react-native-worklets';
+import * as SplashScreen from "expo-splash-screen";
+import { useState } from "react";
+import { Dimensions, View } from "react-native";
+import { Easing, Keyframe } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 
-import { StyledAnimatedView, StyledImage } from './nativewind-interop';
+import { StyledAnimatedView, StyledImage } from "./nativewind-interop";
 
-const INITIAL_SCALE_FACTOR = Dimensions.get('screen').height / 90;
+const INITIAL_SCALE_FACTOR = Dimensions.get("screen").height / 90;
 const DURATION = 600;
 
 export function AnimatedSplashOverlay() {
@@ -37,19 +37,20 @@ export function AnimatedSplashOverlay() {
   const image = (
     <StyledImage
       className="h-[71px] w-[76px]"
-      source={require('@/assets/images/expo-logo.png')}
+      source={require("@/assets/images/expo-logo.png")}
     />
   );
 
   return animate ? (
     <StyledAnimatedView
       entering={splashKeyframe.duration(DURATION).withCallback((finished) => {
-        'worklet';
+        "worklet";
         if (finished) {
           scheduleOnRN(setVisible, false);
         }
       })}
-      className="absolute inset-0 z-[1000] items-center justify-center bg-[#208AEF]">
+      className="absolute inset-0 z-[1000] items-center justify-center bg-[#208AEF]"
+    >
       {image}
     </StyledAnimatedView>
   ) : (
@@ -59,7 +60,8 @@ export function AnimatedSplashOverlay() {
           setAnimate(true);
         });
       }}
-      className="absolute inset-0 z-[1000] items-center justify-center bg-[#208AEF]">
+      className="absolute inset-0 z-[1000] items-center justify-center bg-[#208AEF]"
+    >
       {image}
     </View>
   );
@@ -94,10 +96,10 @@ const logoKeyframe = new Keyframe({
 
 const glowKeyframe = new Keyframe({
   0: {
-    transform: [{ rotateZ: '0deg' }],
+    transform: [{ rotateZ: "0deg" }],
   },
   100: {
-    transform: [{ rotateZ: '7200deg' }],
+    transform: [{ rotateZ: "7200deg" }],
   },
 });
 
@@ -106,10 +108,11 @@ export function AnimatedIcon() {
     <View className="z-[100] h-32 w-32 items-center justify-center">
       <StyledAnimatedView
         entering={glowKeyframe.duration(60 * 1000 * 4)}
-        className="absolute h-[201px] w-[201px]">
+        className="absolute h-[201px] w-[201px]"
+      >
         <StyledImage
           className="absolute h-[201px] w-[201px]"
-          source={require('@/assets/images/logo-glow.png')}
+          source={require("@/assets/images/logo-glow.png")}
         />
       </StyledAnimatedView>
 
@@ -119,10 +122,11 @@ export function AnimatedIcon() {
       />
       <StyledAnimatedView
         entering={logoKeyframe.duration(DURATION)}
-        className="items-center justify-center">
+        className="items-center justify-center"
+      >
         <StyledImage
           className="h-[71px] w-[76px]"
-          source={require('@/assets/images/expo-logo.png')}
+          source={require("@/assets/images/expo-logo.png")}
         />
       </StyledAnimatedView>
     </View>

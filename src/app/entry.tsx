@@ -1,5 +1,5 @@
-import { router, useLocalSearchParams } from 'expo-router';
-import { useEffect, useRef, useState } from 'react';
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -7,19 +7,19 @@ import {
   Platform,
   ScrollView,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSQLiteContext } from 'expo-sqlite';
-import Animated, { FadeInDown } from 'react-native-reanimated';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useSQLiteContext } from "expo-sqlite";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
-import { BrandMark } from '@/components/food/BrandMark';
-import { FoodButton } from '@/components/food/FoodButton';
-import { Pressable, Text, TextInput } from '@/components/LocalizedText';
-import { StyledImage } from '@/components/nativewind-interop';
-import { getFoodEntry, type FoodEntry } from '@/services/calorieTracking';
-import { useDailyCalories } from '@/stores/daily-calories';
+import { BrandMark } from "@/components/food/BrandMark";
+import { FoodButton } from "@/components/food/FoodButton";
+import { Pressable, Text, TextInput } from "@/components/LocalizedText";
+import { StyledImage } from "@/components/nativewind-interop";
+import { getFoodEntry, type FoodEntry } from "@/services/calorieTracking";
+import { useDailyCalories } from "@/stores/daily-calories";
 
-const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'] as const;
+const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"] as const;
 
 function parseOptionalNutrition(value: string, label: string) {
   if (!value.trim()) {
@@ -39,15 +39,16 @@ export default function EntryScreen() {
   const isCreating = routeId === undefined;
   const entryId = Number(routeId);
   const [entry, setEntry] = useState<FoodEntry | null>(null);
-  const [foodName, setFoodName] = useState('');
-  const [calories, setCalories] = useState('');
+  const [foodName, setFoodName] = useState("");
+  const [calories, setCalories] = useState("");
   const [mealType, setMealType] = useState<string | null>(null);
-  const [protein, setProtein] = useState('');
-  const [carbohydrates, setCarbohydrates] = useState('');
-  const [fat, setFat] = useState('');
+  const [protein, setProtein] = useState("");
+  const [carbohydrates, setCarbohydrates] = useState("");
+  const [fat, setFat] = useState("");
   const [isLoading, setIsLoading] = useState(!isCreating);
   const [isSaving, setIsSaving] = useState(false);
-  const [isDeleteConfirmationVisible, setDeleteConfirmationVisible] = useState(false);
+  const [isDeleteConfirmationVisible, setDeleteConfirmationVisible] =
+    useState(false);
   const [error, setError] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
   const returnTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -61,7 +62,7 @@ export default function EntryScreen() {
     const loadEntry = async () => {
       try {
         if (!Number.isInteger(entryId) || entryId < 1) {
-          throw new Error('This meal could not be found.');
+          throw new Error("This meal could not be found.");
         }
         const result = await getFoodEntry(db, entryId);
         if (isCurrent && result) {
@@ -69,15 +70,21 @@ export default function EntryScreen() {
           setFoodName(result.food_name);
           setCalories(String(result.calories));
           setMealType(result.meal_type);
-          setProtein(result.protein_g === null ? '' : String(result.protein_g));
-          setCarbohydrates(result.carbs_g === null ? '' : String(result.carbs_g));
-          setFat(result.fat_g === null ? '' : String(result.fat_g));
+          setProtein(result.protein_g === null ? "" : String(result.protein_g));
+          setCarbohydrates(
+            result.carbs_g === null ? "" : String(result.carbs_g),
+          );
+          setFat(result.fat_g === null ? "" : String(result.fat_g));
         } else if (isCurrent) {
-          setError('This meal could not be found.');
+          setError("This meal could not be found.");
         }
       } catch (cause) {
         if (isCurrent) {
-          setError(cause instanceof Error ? cause.message : 'Could not load this meal.');
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : "Could not load this meal.",
+          );
         }
       } finally {
         if (isCurrent) {
@@ -105,22 +112,22 @@ export default function EntryScreen() {
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace('/');
+      router.replace("/");
     }
   };
 
   const save = async () => {
     const calorieValue = Number(calories);
     if (!foodName.trim()) {
-      setError('Enter a name for this meal.');
+      setError("Enter a name for this meal.");
       return;
     }
     if (!Number.isFinite(calorieValue) || calorieValue <= 0) {
-      setError('Calories must be a positive number.');
+      setError("Calories must be a positive number.");
       return;
     }
     if (!mealType?.trim()) {
-      setError('Choose a meal category.');
+      setError("Choose a meal category.");
       return;
     }
 
@@ -128,11 +135,16 @@ export default function EntryScreen() {
     let carbohydrateValue: number | null;
     let fatValue: number | null;
     try {
-      proteinValue = parseOptionalNutrition(protein, 'Protein');
-      carbohydrateValue = parseOptionalNutrition(carbohydrates, 'Carbohydrates');
-      fatValue = parseOptionalNutrition(fat, 'Fat');
+      proteinValue = parseOptionalNutrition(protein, "Protein");
+      carbohydrateValue = parseOptionalNutrition(
+        carbohydrates,
+        "Carbohydrates",
+      );
+      fatValue = parseOptionalNutrition(fat, "Fat");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Check the nutrition values.');
+      setError(
+        cause instanceof Error ? cause.message : "Check the nutrition values.",
+      );
       return;
     }
 
@@ -153,10 +165,12 @@ export default function EntryScreen() {
       } else {
         await updateEntry(entryId, meal);
       }
-      setToast(isCreating ? 'Meal added to your diary' : 'Meal changes saved');
+      setToast(isCreating ? "Meal added to your diary" : "Meal changes saved");
       returnTimer.current = setTimeout(returnToDiary, 850);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not save this meal.');
+      setError(
+        cause instanceof Error ? cause.message : "Could not save this meal.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -171,10 +185,12 @@ export default function EntryScreen() {
     try {
       await deleteEntry(entry.id);
       setDeleteConfirmationVisible(false);
-      setToast('Meal deleted from your diary');
+      setToast("Meal deleted from your diary");
       returnTimer.current = setTimeout(returnToDiary, 850);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not delete this meal.');
+      setError(
+        cause instanceof Error ? cause.message : "Could not delete this meal.",
+      );
     } finally {
       setIsSaving(false);
     }
@@ -189,17 +205,20 @@ export default function EntryScreen() {
     <SafeAreaView className="flex-1 bg-canvas-light dark:bg-canvas-dark">
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
         <ScrollView
           contentContainerClassName="mx-auto w-full max-w-[560px] flex-grow px-5 pb-9 sm:px-6"
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+        >
           <View className="min-h-[58px] flex-row items-center justify-between">
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Back to today's diary"
               onPress={returnToDiary}
-              className="h-10 w-10 items-center justify-center">
+              className="h-10 w-10 items-center justify-center"
+            >
               <Text className="-mt-1 text-[37px] leading-10 text-ink-light dark:text-ink-dark">
                 ‹
               </Text>
@@ -207,7 +226,7 @@ export default function EntryScreen() {
             <View className="flex-row items-center gap-2">
               <BrandMark size={34} />
               <Text className="text-base font-bold text-ink-light dark:text-ink-dark">
-                {isCreating ? 'New meal' : 'Edit meal'}
+                {isCreating ? "New meal" : "Edit meal"}
               </Text>
             </View>
             <View className="w-10" />
@@ -226,7 +245,7 @@ export default function EntryScreen() {
                 TODAY&apos;S FOOD DIARY
               </Text>
               <Text className="mt-3 text-[30px] font-bold leading-[36px] tracking-[-0.8px] text-ink-light dark:text-ink-dark">
-                {isCreating ? 'Add a meal' : 'Update your meal'}
+                {isCreating ? "Add a meal" : "Update your meal"}
               </Text>
               <Text className="mt-2 text-[13px] leading-5 text-muted-light dark:text-muted-dark">
                 Save it locally and keep your daily calorie totals up to date.
@@ -297,16 +316,18 @@ export default function EntryScreen() {
                           onPress={() => setMealType(type)}
                           className={`min-h-[40px] items-center justify-center rounded-full border px-[14px] ${
                             selected
-                              ? 'border-brand-primary bg-brand-primary'
-                              : 'border-brand-border bg-canvas-light dark:border-selected-dark dark:bg-canvas-dark'
-                          }`}>
+                              ? "border-brand-primary bg-brand-primary"
+                              : "border-brand-border bg-canvas-light dark:border-selected-dark dark:bg-canvas-dark"
+                          }`}
+                        >
                           <Text
                             className={`text-xs font-bold ${
                               selected
-                                ? 'text-white'
-                                : 'text-muted-light dark:text-muted-dark'
-                            }`}>
-                            {type === 'Snack' ? 'Snacks' : type}
+                                ? "text-white"
+                                : "text-muted-light dark:text-muted-dark"
+                            }`}
+                          >
+                            {type === "Snack" ? "Snacks" : type}
                           </Text>
                         </Pressable>
                       );
@@ -322,15 +343,17 @@ export default function EntryScreen() {
                         onPress={() => setMealType(legacyMealType)}
                         className={`min-h-[40px] items-center justify-center rounded-full border px-[14px] ${
                           mealType === legacyMealType
-                            ? 'border-brand-primary bg-brand-primary'
-                            : 'border-brand-border bg-canvas-light dark:border-selected-dark dark:bg-canvas-dark'
-                        }`}>
+                            ? "border-brand-primary bg-brand-primary"
+                            : "border-brand-border bg-canvas-light dark:border-selected-dark dark:bg-canvas-dark"
+                        }`}
+                      >
                         <Text
                           className={`text-xs font-bold ${
                             mealType === legacyMealType
-                              ? 'text-white'
-                              : 'text-muted-light dark:text-muted-dark'
-                          }`}>
+                              ? "text-white"
+                              : "text-muted-light dark:text-muted-dark"
+                          }`}
+                        >
                           Keep “{legacyMealType}”
                         </Text>
                       </Pressable>
@@ -348,9 +371,13 @@ export default function EntryScreen() {
                 </Text>
                 <View className="mt-3 flex-row gap-2">
                   {[
-                    { label: 'Protein', value: protein, setter: setProtein },
-                    { label: 'Carbs', value: carbohydrates, setter: setCarbohydrates },
-                    { label: 'Fat', value: fat, setter: setFat },
+                    { label: "Protein", value: protein, setter: setProtein },
+                    {
+                      label: "Carbs",
+                      value: carbohydrates,
+                      setter: setCarbohydrates,
+                    },
+                    { label: "Fat", value: fat, setter: setFat },
                   ].map((field) => (
                     <View key={field.label} className="flex-1">
                       <Text className="text-[10px] font-semibold text-muted-light dark:text-muted-dark">
@@ -372,7 +399,10 @@ export default function EntryScreen() {
               </View>
 
               {error ? (
-                <Text accessibilityRole="alert" className="mt-3 text-xs leading-[18px] text-[#A53F35]">
+                <Text
+                  accessibilityRole="alert"
+                  className="mt-3 text-xs leading-[18px] text-[#A53F35]"
+                >
                   {error}
                 </Text>
               ) : null}
@@ -381,12 +411,12 @@ export default function EntryScreen() {
                 <FoodButton
                   label={
                     isSaving
-                      ? 'Saving…'
+                      ? "Saving…"
                       : isCreating
-                        ? 'Add to diary'
-                        : 'Save changes'
+                        ? "Add to diary"
+                        : "Save changes"
                   }
-                  trailing={isSaving ? undefined : '→'}
+                  trailing={isSaving ? undefined : "→"}
                   disabled={isSaving}
                   onPress={() => void save()}
                 />
@@ -407,7 +437,10 @@ export default function EntryScreen() {
               </View>
             </View>
           ) : error ? (
-            <Text accessibilityRole="alert" className="pt-8 text-sm text-[#A53F35]">
+            <Text
+              accessibilityRole="alert"
+              className="pt-8 text-sm text-[#A53F35]"
+            >
               {error}
             </Text>
           ) : null}
@@ -422,21 +455,24 @@ export default function EntryScreen() {
           if (!isSaving) {
             setDeleteConfirmationVisible(false);
           }
-        }}>
+        }}
+      >
         <View className="flex-1 items-center justify-center bg-black/45 px-6">
           <View className="w-full max-w-[390px] rounded-[24px] bg-surface-light p-5 dark:bg-surface-dark">
             <Text className="text-[19px] font-bold text-ink-light dark:text-ink-dark">
               Delete this meal?
             </Text>
             <Text className="mt-2 text-[13px] leading-5 text-muted-light dark:text-muted-dark">
-              This removes it from your diary and updates today&apos;s calorie total.
+              This removes it from your diary and updates today&apos;s calorie
+              total.
             </Text>
             <View className="mt-5 flex-row gap-3">
               <Pressable
                 accessibilityRole="button"
                 disabled={isSaving}
                 onPress={() => setDeleteConfirmationVisible(false)}
-                className="min-h-[48px] flex-1 items-center justify-center rounded-[15px] bg-canvas-light dark:bg-canvas-dark">
+                className="min-h-[48px] flex-1 items-center justify-center rounded-[15px] bg-canvas-light dark:bg-canvas-dark"
+              >
                 <Text className="text-sm font-bold text-ink-light dark:text-ink-dark">
                   Cancel
                 </Text>
@@ -445,9 +481,10 @@ export default function EntryScreen() {
                 accessibilityRole="button"
                 disabled={isSaving}
                 onPress={() => void remove()}
-                className="min-h-[48px] flex-1 items-center justify-center rounded-[15px] bg-[#A53F35] disabled:opacity-60">
+                className="min-h-[48px] flex-1 items-center justify-center rounded-[15px] bg-[#A53F35] disabled:opacity-60"
+              >
                 <Text className="text-sm font-bold text-white">
-                  {isSaving ? 'Deleting…' : 'Delete meal'}
+                  {isSaving ? "Deleting…" : "Delete meal"}
                 </Text>
               </Pressable>
             </View>
@@ -459,8 +496,11 @@ export default function EntryScreen() {
         <Animated.View
           entering={FadeInDown.duration(180)}
           accessibilityRole="alert"
-          className="absolute bottom-5 left-5 right-5 self-center rounded-[16px] bg-[#202820] px-4 py-[13px]">
-          <Text className="text-center text-[12px] font-semibold text-white">{toast}</Text>
+          className="absolute bottom-5 left-5 right-5 self-center rounded-[16px] bg-[#202820] px-4 py-[13px]"
+        >
+          <Text className="text-center text-[12px] font-semibold text-white">
+            {toast}
+          </Text>
         </Animated.View>
       ) : null}
     </SafeAreaView>

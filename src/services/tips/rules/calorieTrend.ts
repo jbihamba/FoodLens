@@ -1,7 +1,7 @@
-import { TIP_THRESHOLDS } from '@/constants/tips';
+import { TIP_THRESHOLDS } from "@/constants/tips";
 
-import type { TipRule } from '../types';
-import { makeTip } from './shared';
+import type { TipRule } from "../types";
+import { makeTip } from "./shared";
 
 const calorieTrend: TipRule = (stats) => {
   const currentAverage = stats.current.calories.averagePerDay;
@@ -23,13 +23,13 @@ const calorieTrend: TipRule = (stats) => {
   const percent = Math.round(Math.abs(rawChange) * 100);
   return makeTip(
     stats,
-    'calorie-trend',
-    'info',
-    isIncreasing ? 'tips.trend.up.title' : 'tips.trend.down.title',
-    isIncreasing ? 'tips.trend.up.message' : 'tips.trend.down.message',
+    "calorie-trend",
+    "info",
+    isIncreasing ? "tips.trend.up.title" : "tips.trend.down.title",
+    isIncreasing ? "tips.trend.up.message" : "tips.trend.down.message",
     { percent },
-    `${isIncreasing ? '+' : '−'}${percent}%`,
-    'tips.metric.calories',
+    `${isIncreasing ? "+" : "−"}${percent}%`,
+    "tips.metric.calories",
     percent,
   );
 };

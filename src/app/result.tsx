@@ -1,38 +1,38 @@
-import { router } from 'expo-router';
-import Slider from '@react-native-community/slider';
-import { useRef, useState } from 'react';
+import { router } from "expo-router";
+import Slider from "@react-native-community/slider";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import Animated, {
   FadeIn,
   Layout,
   useAnimatedStyle,
   withSpring,
-} from 'react-native-reanimated';
+} from "react-native-reanimated";
 
-import { BrandMark } from '@/components/food/BrandMark';
-import { CalorieProgressBar } from '@/components/food/CalorieProgressBar';
-import { FoodButton } from '@/components/food/FoodButton';
-import { Pressable, Text, TextInput } from '@/components/LocalizedText';
-import { StyledImage } from '@/components/nativewind-interop';
-import { useAppSettings } from '@/stores/app-settings';
-import { useDailyCalories } from '@/stores/daily-calories';
-import { useScanSession } from '@/stores/scan-session';
-import type { ScanSession } from '@/types/food';
+import { BrandMark } from "@/components/food/BrandMark";
+import { CalorieProgressBar } from "@/components/food/CalorieProgressBar";
+import { FoodButton } from "@/components/food/FoodButton";
+import { Pressable, Text, TextInput } from "@/components/LocalizedText";
+import { StyledImage } from "@/components/nativewind-interop";
+import { useAppSettings } from "@/stores/app-settings";
+import { useDailyCalories } from "@/stores/daily-calories";
+import { useScanSession } from "@/stores/scan-session";
+import type { ScanSession } from "@/types/food";
 
-const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'] as const;
+const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"] as const;
 type MealType = (typeof MEAL_TYPES)[number];
 const MEAL_TYPE_LABELS: Record<MealType, string> = {
-  Breakfast: 'Petit-déjeuner',
-  Lunch: 'Déjeuner',
-  Dinner: 'Dîner',
-  Snack: 'Collation',
+  Breakfast: "Petit-déjeuner",
+  Lunch: "Déjeuner",
+  Dinner: "Dîner",
+  Snack: "Collation",
 };
 
 function getPortionGrams(portionSize: string | null) {
@@ -47,16 +47,15 @@ function getPortionGrams(portionSize: string | null) {
     return null;
   }
 
-  const amount = Number(quantity[1].replace(',', '.'));
+  const amount = Number(quantity[1].replace(",", "."));
   const unit = quantity[2].toLowerCase();
-  const grams =
-    /^(kg|kilograms?)$/.test(unit)
-      ? amount * 1000
-      : /^(lb|lbs|pound|pounds)$/.test(unit)
-        ? amount * 453.59237
-        : /^(oz|ounce|ounces)$/.test(unit)
-          ? amount * 28.3495
-          : amount;
+  const grams = /^(kg|kilograms?)$/.test(unit)
+    ? amount * 1000
+    : /^(lb|lbs|pound|pounds)$/.test(unit)
+      ? amount * 453.59237
+      : /^(oz|ounce|ounces)$/.test(unit)
+        ? amount * 28.3495
+        : amount;
 
   return Number.isFinite(grams) && grams > 0 ? grams : null;
 }
@@ -68,7 +67,7 @@ function formatGrams(grams: number) {
 function getPortionLabel(
   portionSize: string | null,
   multiplier: number,
-  units: 'metric' | 'imperial',
+  units: "metric" | "imperial",
 ) {
   if (!portionSize) {
     return `${multiplier}× portion estimée`;
@@ -82,48 +81,60 @@ function getPortionLabel(
     const sourceUnit = quantity[2].toLowerCase();
     const isMetricMass = /^(kg|kilograms?|g|grams?)$/.test(sourceUnit);
     const isImperialMass = /^(oz|ounces?|lbs?|pounds?)$/.test(sourceUnit);
-    const isMetricVolume = /^(ml|milliliters?|l|liters?|litres?)$/.test(sourceUnit);
+    const isMetricVolume = /^(ml|milliliters?|l|liters?|litres?)$/.test(
+      sourceUnit,
+    );
     const isImperialVolume = /^(fl oz|fluid ounces?)$/.test(sourceUnit);
     let amount = sourceAmount;
     let unit = quantity[2];
 
-    if (units === 'imperial' && isMetricMass) {
-      const grams = sourceAmount * (/^(kg|kilograms?)$/.test(sourceUnit) ? 1000 : 1);
+    if (units === "imperial" && isMetricMass) {
+      const grams =
+        sourceAmount * (/^(kg|kilograms?)$/.test(sourceUnit) ? 1000 : 1);
       amount = grams / 28.3495;
-      unit = 'oz';
+      unit = "oz";
       if (amount >= 16) {
         amount /= 16;
-        unit = 'lb';
+        unit = "lb";
       }
-    } else if (units === 'imperial' && (isMetricVolume || /^cups?$/.test(sourceUnit))) {
-      const milliliters = sourceAmount * (
-        /^cups?$/.test(sourceUnit)
+    } else if (
+      units === "imperial" &&
+      (isMetricVolume || /^cups?$/.test(sourceUnit))
+    ) {
+      const milliliters =
+        sourceAmount *
+        (/^cups?$/.test(sourceUnit)
           ? 236.588
           : /^(l|liters?|litres?)$/.test(sourceUnit)
             ? 1000
-            : 1
-      );
+            : 1);
       amount = milliliters / 29.5735;
-      unit = 'fl oz';
-    } else if (units === 'metric' && isImperialMass) {
-      const grams = sourceAmount * (/^(lb|lbs|pound|pounds)$/.test(sourceUnit) ? 453.59237 : 28.3495);
+      unit = "fl oz";
+    } else if (units === "metric" && isImperialMass) {
+      const grams =
+        sourceAmount *
+        (/^(lb|lbs|pound|pounds)$/.test(sourceUnit) ? 453.59237 : 28.3495);
       amount = grams;
-      unit = 'g';
+      unit = "g";
       if (amount >= 1000) {
         amount /= 1000;
-        unit = 'kg';
+        unit = "kg";
       }
-    } else if (units === 'metric' && isImperialVolume) {
+    } else if (units === "metric" && isImperialVolume) {
       amount = sourceAmount * 29.5735;
-      unit = 'ml';
-    } else if (units === 'metric' && /^cups?$/.test(sourceUnit)) {
+      unit = "ml";
+    } else if (units === "metric" && /^cups?$/.test(sourceUnit)) {
       amount = sourceAmount * 236.588;
-      unit = 'ml';
-    } else if (units === 'metric' && /^(l|liters?|litres?)$/.test(sourceUnit)) {
-      unit = 'L';
-    } else if (units === 'imperial' && isMetricVolume && /^(l|liters?|litres?)$/.test(sourceUnit)) {
+      unit = "ml";
+    } else if (units === "metric" && /^(l|liters?|litres?)$/.test(sourceUnit)) {
+      unit = "L";
+    } else if (
+      units === "imperial" &&
+      isMetricVolume &&
+      /^(l|liters?|litres?)$/.test(sourceUnit)
+    ) {
       amount = sourceAmount * 33.814;
-      unit = 'fl oz';
+      unit = "fl oz";
     }
 
     const formattedAmount = Number.isInteger(amount)
@@ -156,9 +167,10 @@ function NutritionCard({
         <Text
           className={`text-[21px] font-bold tracking-[-0.5px] ${
             unavailable
-              ? 'text-muted-light dark:text-muted-dark'
-              : 'text-ink-light dark:text-ink-dark'
-          }`}>
+              ? "text-muted-light dark:text-muted-dark"
+              : "text-ink-light dark:text-ink-dark"
+          }`}
+        >
           {value}
         </Text>
         <Text className="text-[10px] font-semibold text-muted-light dark:text-muted-dark">
@@ -176,17 +188,23 @@ function NutritionCard({
 
 export default function ResultScreen() {
   const { scan } = useScanSession();
-  return <ResultContent key={scan?.imageUri ?? 'empty'} scan={scan} />;
+  return <ResultContent key={scan?.imageUri ?? "empty"} scan={scan} />;
 }
 
 function ResultContent({ scan }: { scan: ScanSession | null }) {
   const { settings } = useAppSettings();
-  const { addEntry, goal, entries, isLoading: isDiaryLoading, error: diaryError } = useDailyCalories();
-  const [foodName, setFoodName] = useState(scan?.analysis.foodName ?? '');
+  const {
+    addEntry,
+    goal,
+    entries,
+    isLoading: isDiaryLoading,
+    error: diaryError,
+  } = useDailyCalories();
+  const [foodName, setFoodName] = useState(scan?.analysis.foodName ?? "");
   const [mealType, setMealType] = useState<MealType | null>(null);
   const [portionValue, setPortionValue] = useState(1);
   const [isCustomPortion, setIsCustomPortion] = useState(false);
-  const [customGrams, setCustomGrams] = useState('');
+  const [customGrams, setCustomGrams] = useState("");
   const [isLogging, setIsLogging] = useState(false);
   const [logged, setLogged] = useState(false);
   const [logError, setLogError] = useState<string | null>(null);
@@ -196,48 +214,46 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace('/');
+      router.replace("/");
     }
   };
 
-  const changePhoto = (source: 'camera' | 'gallery') => {
+  const changePhoto = (source: "camera" | "gallery") => {
     router.push(
-      source === 'gallery'
-        ? { pathname: '/scanner', params: { source: 'gallery' } }
-        : '/scanner',
+      source === "gallery"
+        ? { pathname: "/scanner", params: { source: "gallery" } }
+        : "/scanner",
     );
   };
 
   const baseCalories = scan?.analysis.estimatedCalories ?? null;
   const basePortionGrams = getPortionGrams(scan?.analysis.portionSize ?? null);
-  const customQuantity = Number(customGrams.replace(',', '.'));
+  const customQuantity = Number(customGrams.replace(",", "."));
   const isCustomQuantityValid =
     customGrams.trim().length > 0 &&
     Number.isFinite(customQuantity) &&
     customQuantity > 0 &&
     customQuantity <= 10_000;
-  const portionMultiplier =
-    isCustomPortion
-      ? isCustomQuantityValid && basePortionGrams !== null
-        ? customQuantity / basePortionGrams
-        : null
-      : portionValue;
+  const portionMultiplier = isCustomPortion
+    ? isCustomQuantityValid && basePortionGrams !== null
+      ? customQuantity / basePortionGrams
+      : null
+    : portionValue;
   const calories =
     baseCalories === null || portionMultiplier === null
       ? null
       : Math.round(baseCalories * portionMultiplier);
-  const selectedPortionLabel =
-    isCustomPortion
-      ? isCustomQuantityValid
-        ? formatGrams(customQuantity)
-        : 'Enter a quantity in grams'
-      : basePortionGrams !== null
-        ? formatGrams(basePortionGrams * (portionMultiplier ?? 1))
-        : getPortionLabel(
-            scan?.analysis.portionSize ?? null,
-            portionMultiplier ?? 1,
-            settings.units,
-          );
+  const selectedPortionLabel = isCustomPortion
+    ? isCustomQuantityValid
+      ? formatGrams(customQuantity)
+      : "Enter a quantity in grams"
+    : basePortionGrams !== null
+      ? formatGrams(basePortionGrams * (portionMultiplier ?? 1))
+      : getPortionLabel(
+          scan?.analysis.portionSize ?? null,
+          portionMultiplier ?? 1,
+          settings.units,
+        );
   const portionVisualScale = Math.min(
     1.4,
     Math.max(0.7, portionMultiplier ?? 1),
@@ -288,7 +304,11 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
       });
       setLogged(true);
     } catch (cause) {
-      setLogError(cause instanceof Error ? cause.message : 'Could not add this meal to your diary.');
+      setLogError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not add this meal to your diary.",
+      );
     } finally {
       submissionLock.current = false;
       setIsLogging(false);
@@ -296,21 +316,29 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
   };
 
   return (
-    <SafeAreaView edges={['top', 'bottom']} className="flex-1 bg-canvas-light dark:bg-canvas-dark">
+    <SafeAreaView
+      edges={["top", "bottom"]}
+      className="flex-1 bg-canvas-light dark:bg-canvas-dark"
+    >
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
         <ScrollView
           contentContainerClassName="mx-auto w-full max-w-[560px] flex-grow px-5 pb-5 sm:px-6"
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+        >
           <View className="min-h-[58px] flex-row items-center justify-between">
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Go back"
               onPress={back}
-              className="h-11 w-11 items-center justify-center rounded-full bg-surface-light dark:bg-surface-dark">
-              <Text className="text-[27px] leading-8 text-ink-light dark:text-ink-dark">‹</Text>
+              className="h-11 w-11 items-center justify-center rounded-full bg-surface-light dark:bg-surface-dark"
+            >
+              <Text className="text-[27px] leading-8 text-ink-light dark:text-ink-dark">
+                ‹
+              </Text>
             </Pressable>
             <View className="flex-row items-center gap-2">
               <BrandMark size={28} />
@@ -324,7 +352,8 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
           {!scan ? (
             <Animated.View
               entering={FadeIn.duration(260)}
-              className="flex-1 items-center justify-center py-16">
+              className="flex-1 items-center justify-center py-16"
+            >
               <View className="h-[68px] w-[68px] items-center justify-center rounded-[23px] bg-brand-secondary dark:bg-selected-dark">
                 <Text className="text-[30px] text-brand-primary">⌕</Text>
               </View>
@@ -332,17 +361,21 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
                 Aucune analyse à consulter
               </Text>
               <Text className="mt-2 max-w-[280px] text-center text-sm leading-[21px] text-muted-light dark:text-muted-dark">
-                Prends ou choisis une photo de ton repas pour obtenir une estimation.
+                Prends ou choisis une photo de ton repas pour obtenir une
+                estimation.
               </Text>
               <FoodButton
                 label="Scanner un repas"
                 trailing="→"
                 className="mt-6 self-stretch"
-                onPress={() => router.replace('/scanner')}
+                onPress={() => router.replace("/scanner")}
               />
             </Animated.View>
           ) : (
-            <Animated.View entering={FadeIn.duration(280)} layout={Layout.springify()}>
+            <Animated.View
+              entering={FadeIn.duration(280)}
+              layout={Layout.springify()}
+            >
               <View className="pb-[15px] pt-5">
                 <Text className="text-[10px] font-bold tracking-[1.4px] text-brand-primary">
                   ANALYSE DE TON REPAS
@@ -365,7 +398,8 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
                     Résultat estimé
                   </Text>
                   <Text className="text-[11px] leading-4 text-muted-light dark:text-muted-dark">
-                    Les valeurs peuvent varier selon les ingrédients et la portion.
+                    Les valeurs peuvent varier selon les ingrédients et la
+                    portion.
                   </Text>
                   <View className="self-start rounded-full bg-brand-secondary px-2 py-1 dark:bg-selected-dark">
                     <Text className="text-[9px] font-bold text-brand-primary dark:text-[#A8C8B2]">
@@ -378,22 +412,29 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
                     accessibilityRole="button"
                     accessibilityLabel="Reprendre la photo du repas"
                     disabled={isLogging || logged}
-                    onPress={() => changePhoto('camera')}
-                    className="min-h-11 items-center justify-center rounded-full bg-brand-primary px-3 disabled:opacity-50">
-                    <Text className="text-[10px] font-bold text-white">Reprendre</Text>
+                    onPress={() => changePhoto("camera")}
+                    className="min-h-11 items-center justify-center rounded-full bg-brand-primary px-3 disabled:opacity-50"
+                  >
+                    <Text className="text-[10px] font-bold text-white">
+                      Reprendre
+                    </Text>
                   </Pressable>
                   <Pressable
                     accessibilityRole="button"
                     accessibilityLabel="Choisir une autre photo du repas"
                     disabled={isLogging || logged}
-                    onPress={() => changePhoto('gallery')}
-                    className="min-h-11 items-center justify-center rounded-full bg-surface-light px-3 dark:bg-surface-dark disabled:opacity-50">
-                    <Text className="text-[10px] font-bold text-ink-light dark:text-ink-dark">Galerie</Text>
+                    onPress={() => changePhoto("gallery")}
+                    className="min-h-11 items-center justify-center rounded-full bg-surface-light px-3 dark:bg-surface-dark disabled:opacity-50"
+                  >
+                    <Text className="text-[10px] font-bold text-ink-light dark:text-ink-dark">
+                      Galerie
+                    </Text>
                   </Pressable>
                 </View>
               </View>
 
-              {scan.analysis.description || scan.analysis.ingredients.length > 0 ? (
+              {scan.analysis.description ||
+              scan.analysis.ingredients.length > 0 ? (
                 <View className="mt-4 rounded-[21px] border-[0.5px] border-selected-light bg-surface-light p-[17px] dark:border-selected-dark dark:bg-surface-dark">
                   <Text className="text-[10px] font-bold tracking-[1.1px] text-muted-light dark:text-muted-dark">
                     CE QUE L’ON VOIT
@@ -408,7 +449,8 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
                       {scan.analysis.ingredients.map((ingredient) => (
                         <View
                           key={ingredient}
-                          className="rounded-full bg-brand-secondary px-3 py-[7px] dark:bg-selected-dark">
+                          className="rounded-full bg-brand-secondary px-3 py-[7px] dark:bg-selected-dark"
+                        >
                           <Text className="text-[10px] font-semibold text-brand-primary dark:text-[#A8C8B2]">
                             {ingredient}
                           </Text>
@@ -441,7 +483,8 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
                 />
                 {scan.analysis.confidence !== null ? (
                   <Text className="mt-[9px] text-[11px] text-muted-light dark:text-muted-dark">
-                    Correspondance visuelle · {Math.round(scan.analysis.confidence * 100)} %
+                    Correspondance visuelle ·{" "}
+                    {Math.round(scan.analysis.confidence * 100)} %
                   </Text>
                 ) : null}
               </View>
@@ -475,22 +518,40 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
                         Calories
                       </Text>
                       <Text className="mt-[2px] text-[10px] text-muted-light dark:text-muted-dark">
-                        {calories === null ? 'Aucune estimation visuelle' : 'Énergie approximative'}
+                        {calories === null
+                          ? "Aucune estimation visuelle"
+                          : "Énergie approximative"}
                       </Text>
                     </View>
                   </View>
                   <Text className="text-[30px] font-bold leading-9 tracking-[-1px] text-ink-light dark:text-ink-dark">
-                    {calories === null ? '—' : calories.toLocaleString()}
+                    {calories === null ? "—" : calories.toLocaleString()}
                   </Text>
                 </View>
 
                 <View className="mt-3 flex-row gap-2">
-                  <NutritionCard label="PROTÉINES" value="—" unit="g" unavailable />
-                  <NutritionCard label="GLUCIDES" value="—" unit="g" unavailable />
-                  <NutritionCard label="LIPIDES" value="—" unit="g" unavailable />
+                  <NutritionCard
+                    label="PROTÉINES"
+                    value="—"
+                    unit="g"
+                    unavailable
+                  />
+                  <NutritionCard
+                    label="GLUCIDES"
+                    value="—"
+                    unit="g"
+                    unavailable
+                  />
+                  <NutritionCard
+                    label="LIPIDES"
+                    value="—"
+                    unit="g"
+                    unavailable
+                  />
                 </View>
                 <Text className="mt-3 text-[10px] leading-[15px] text-muted-light dark:text-muted-dark">
-                  Les macronutriments ne sont pas fournis par cette analyse : FoodLens ne les invente pas.
+                  Les macronutriments ne sont pas fournis par cette analyse :
+                  FoodLens ne les invente pas.
                 </Text>
               </View>
 
@@ -508,11 +569,13 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
 
                 <View
                   accessibilityLabel={`Visual portion preview: ${selectedPortionLabel}`}
-                  className="mt-4 min-h-[157px] flex-row items-center justify-center gap-5 rounded-[17px] bg-canvas-light px-4 py-3 dark:bg-canvas-dark">
+                  className="mt-4 min-h-[157px] flex-row items-center justify-center gap-5 rounded-[17px] bg-canvas-light px-4 py-3 dark:bg-canvas-dark"
+                >
                   <View className="h-[128px] w-[128px] items-center justify-center rounded-full border-[7px] border-white bg-[#E4E8DE] dark:border-[#455249] dark:bg-[#303A33]">
                     <Animated.View
                       style={portionImageStyle}
-                      className="h-[92px] w-[92px] overflow-hidden rounded-full">
+                      className="h-[92px] w-[92px] overflow-hidden rounded-full"
+                    >
                       <StyledImage
                         source={{ uri: scan.imageUri }}
                         contentFit="cover"
@@ -526,7 +589,8 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
                     </Text>
                     <Text
                       numberOfLines={2}
-                      className="mt-1 text-[17px] font-bold leading-[21px] text-ink-light dark:text-ink-dark">
+                      className="mt-1 text-[17px] font-bold leading-[21px] text-ink-light dark:text-ink-dark"
+                    >
                       {selectedPortionLabel}
                     </Text>
                     <Text className="mt-2 text-[10px] leading-[15px] text-muted-light dark:text-muted-dark">
@@ -550,30 +614,46 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
                     setIsCustomPortion(false);
                     setPortionValue(value);
                   }}
-                  style={{ width: '100%', height: 44 }}
+                  style={{ width: "100%", height: 44 }}
                 />
                 <View className="flex-row justify-between">
-                  <Text className="text-[10px] text-muted-light dark:text-muted-dark">½ portion</Text>
-                  <Text className="text-[11px] font-bold text-brand-primary dark:text-[#A8C8B2]">
-                    {isCustomPortion ? 'Personnalisée' : `${portionValue.toFixed(2).replace(/0$/, '').replace(/\.$/, '')}×`}
+                  <Text className="text-[10px] text-muted-light dark:text-muted-dark">
+                    ½ portion
                   </Text>
-                  <Text className="text-[10px] text-muted-light dark:text-muted-dark">1½ portion</Text>
+                  <Text className="text-[11px] font-bold text-brand-primary dark:text-[#A8C8B2]">
+                    {isCustomPortion
+                      ? "Personnalisée"
+                      : `${portionValue.toFixed(2).replace(/0$/, "").replace(/\.$/, "")}×`}
+                  </Text>
+                  <Text className="text-[10px] text-muted-light dark:text-muted-dark">
+                    1½ portion
+                  </Text>
                 </View>
                 <Pressable
                   accessibilityRole="button"
                   accessibilityLabel="Saisir une portion personnalisée en grammes"
-                  accessibilityState={{ selected: isCustomPortion, disabled: logged || isLogging }}
+                  accessibilityState={{
+                    selected: isCustomPortion,
+                    disabled: logged || isLogging,
+                  }}
                   disabled={logged || isLogging}
                   onPress={() => setIsCustomPortion((current) => !current)}
                   className={`mt-3 min-h-11 items-center justify-center rounded-[13px] border ${
                     isCustomPortion
-                      ? 'border-brand-primary bg-brand-primary'
-                      : 'border-brand-border bg-canvas-light dark:border-selected-dark dark:bg-canvas-dark'
-                  }`}>
-                  <Text className={`text-[12px] font-bold ${
-                    isCustomPortion ? 'text-white' : 'text-muted-light dark:text-muted-dark'
-                  }`}>
-                    {isCustomPortion ? 'Portion personnalisée' : 'Saisir une quantité précise'}
+                      ? "border-brand-primary bg-brand-primary"
+                      : "border-brand-border bg-canvas-light dark:border-selected-dark dark:bg-canvas-dark"
+                  }`}
+                >
+                  <Text
+                    className={`text-[12px] font-bold ${
+                      isCustomPortion
+                        ? "text-white"
+                        : "text-muted-light dark:text-muted-dark"
+                    }`}
+                  >
+                    {isCustomPortion
+                      ? "Portion personnalisée"
+                      : "Saisir une quantité précise"}
                   </Text>
                 </Pressable>
 
@@ -598,10 +678,10 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
 
                 <Text className="mt-[10px] text-[10px] leading-[15px] text-muted-light dark:text-muted-dark">
                   {isCustomPortion && basePortionGrams === null
-                    ? 'Aucun poids de référence : les calories ne peuvent pas être ajustées en grammes.'
+                    ? "Aucun poids de référence : les calories ne peuvent pas être ajustées en grammes."
                     : isCustomPortion && !isCustomQuantityValid
-                      ? 'Saisis une quantité supérieure à 0 et inférieure ou égale à 10 000 g.'
-                      : 'Les calories sont recalculées à partir de la portion estimée. Les valeurs réelles peuvent varier.'}
+                      ? "Saisis une quantité supérieure à 0 et inférieure ou égale à 10 000 g."
+                      : "Les calories sont recalculées à partir de la portion estimée. Les valeurs réelles peuvent varier."}
                 </Text>
               </View>
 
@@ -625,15 +705,17 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
                         onPress={() => setMealType(type)}
                         className={`min-h-[40px] items-center justify-center rounded-full border px-[14px] ${
                           selected
-                            ? 'border-brand-primary bg-brand-primary'
-                            : 'border-brand-border bg-canvas-light dark:border-selected-dark dark:bg-canvas-dark'
-                        } disabled:opacity-55`}>
+                            ? "border-brand-primary bg-brand-primary"
+                            : "border-brand-border bg-canvas-light dark:border-selected-dark dark:bg-canvas-dark"
+                        } disabled:opacity-55`}
+                      >
                         <Text
                           className={`text-xs font-bold ${
                             selected
-                              ? 'text-white'
-                              : 'text-muted-light dark:text-muted-dark'
-                          }`}>
+                              ? "text-white"
+                              : "text-muted-light dark:text-muted-dark"
+                          }`}
+                        >
                           {MEAL_TYPE_LABELS[type]}
                         </Text>
                       </Pressable>
@@ -655,7 +737,8 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
                         OBJECTIF DU JOUR · APRÈS AJOUT
                       </Text>
                       <Text className="text-[11px] font-bold text-ink-light dark:text-ink-dark">
-                        {projectedCalories.toLocaleString()} / {dailyGoal.toLocaleString()} kcal
+                        {projectedCalories.toLocaleString()} /{" "}
+                        {dailyGoal.toLocaleString()} kcal
                       </Text>
                     </View>
                     <View className="mt-2">
@@ -666,7 +749,7 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
                     </View>
                     <Text className="mt-2 text-[10px] text-muted-light dark:text-muted-dark">
                       {remainingAfterMeal === 0
-                        ? 'L’objectif quotidien sera atteint ou dépassé.'
+                        ? "L’objectif quotidien sera atteint ou dépassé."
                         : `Il restera ${remainingAfterMeal?.toLocaleString()} kcal après l’ajout.`}
                     </Text>
                   </View>
@@ -678,17 +761,25 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
                   i
                 </Text>
                 <Text className="flex-1 text-[10px] leading-[15px] text-[#705C42] dark:text-[#E2D3BA]">
-                  Cette estimation visuelle n’est pas une donnée nutritionnelle vérifiée. Les valeurs varient selon les ingrédients, la préparation et la portion.
+                  Cette estimation visuelle n’est pas une donnée nutritionnelle
+                  vérifiée. Les valeurs varient selon les ingrédients, la
+                  préparation et la portion.
                 </Text>
               </View>
 
               {diaryError ? (
-                <Text accessibilityRole="alert" className="mt-3 text-[11px] leading-[17px] text-[#A53F35]">
+                <Text
+                  accessibilityRole="alert"
+                  className="mt-3 text-[11px] leading-[17px] text-[#A53F35]"
+                >
                   Impossible d’actualiser le journal du jour : {diaryError}
                 </Text>
               ) : null}
               {logError ? (
-                <Text accessibilityRole="alert" className="mt-3 text-[11px] leading-[17px] text-[#A53F35]">
+                <Text
+                  accessibilityRole="alert"
+                  className="mt-3 text-[11px] leading-[17px] text-[#A53F35]"
+                >
                   {logError}
                 </Text>
               ) : null}
@@ -707,22 +798,22 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
             <FoodButton
               label={
                 logged
-                  ? 'Repas ajouté au journal'
+                  ? "Repas ajouté au journal"
                   : isLogging
-                    ? 'Ajout au journal…'
-                    : 'Ajouter au journal'
+                    ? "Ajout au journal…"
+                    : "Ajouter au journal"
               }
               hint={
                 logged
-                  ? `${calories?.toLocaleString('fr-FR')} kcal · ${mealType}`
+                  ? `${calories?.toLocaleString("fr-FR")} kcal · ${mealType}`
                   : !mealType
-                    ? 'Choisis petit-déjeuner, déjeuner, dîner ou collation'
+                    ? "Choisis petit-déjeuner, déjeuner, dîner ou collation"
                     : calories === null || calories <= 0
-                      ? 'Une estimation calorique positive est requise'
-                      : 'Enregistre cette estimation dans ton journal du jour'
+                      ? "Une estimation calorique positive est requise"
+                      : "Enregistre cette estimation dans ton journal du jour"
               }
-              variant={logged ? 'secondary' : 'primary'}
-              trailing={logged || isLogging ? undefined : '＋'}
+              variant={logged ? "secondary" : "primary"}
+              trailing={logged || isLogging ? undefined : "＋"}
               disabled={
                 logged ||
                 isLogging ||
@@ -737,8 +828,9 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
               accessibilityRole="button"
               accessibilityLabel="Reprendre la photo"
               disabled={isLogging}
-              onPress={() => router.replace('/scanner')}
-              className="mt-1 min-h-11 items-center justify-center disabled:opacity-50">
+              onPress={() => router.replace("/scanner")}
+              className="mt-1 min-h-11 items-center justify-center disabled:opacity-50"
+            >
               <Text className="text-[13px] font-semibold text-muted-light dark:text-muted-dark">
                 Reprendre la photo
               </Text>

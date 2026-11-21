@@ -1,7 +1,7 @@
-import { TIP_THRESHOLDS } from '@/constants/tips';
+import { TIP_THRESHOLDS } from "@/constants/tips";
 
-import type { TipRule } from '../types';
-import { hasEnoughTrackedDays, makeTip } from './shared';
+import type { TipRule } from "../types";
+import { hasEnoughTrackedDays, makeTip } from "./shared";
 
 const proteinLow: TipRule = (stats, goals) => {
   const average = stats.current.proteins.averagePerDay;
@@ -21,15 +21,15 @@ const proteinLow: TipRule = (stats, goals) => {
 
   return makeTip(
     stats,
-    'protein-low',
-    'info',
-    'tips.protein.title',
-    'tips.protein.message',
+    "protein-low",
+    "info",
+    "tips.protein.title",
+    "tips.protein.message",
     { percent: percentBelow },
     `−${percentBelow}%`,
-    'tips.metric.protein',
+    "tips.metric.protein",
     percentBelow,
-    { labelKey: 'tips.action.viewDiary', target: 'calendar' },
+    { labelKey: "tips.action.viewDiary", target: "calendar" },
   );
 };
 
