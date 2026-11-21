@@ -1,6 +1,12 @@
-import { createContext, useContext, useMemo, useState, type PropsWithChildren } from 'react';
+import {
+  createContext,
+  useContext,
+  useMemo,
+  useState,
+  type PropsWithChildren,
+} from "react";
 
-import type { ScanSession } from '@/types/food';
+import type { ScanSession } from "@/types/food";
 
 interface ScanSessionContextValue {
   scan: ScanSession | null;
@@ -21,13 +27,17 @@ export function ScanSessionProvider({ children }: PropsWithChildren) {
     [scan],
   );
 
-  return <ScanSessionContext.Provider value={value}>{children}</ScanSessionContext.Provider>;
+  return (
+    <ScanSessionContext.Provider value={value}>
+      {children}
+    </ScanSessionContext.Provider>
+  );
 }
 
 export function useScanSession() {
   const value = useContext(ScanSessionContext);
   if (!value) {
-    throw new Error('useScanSession must be used within ScanSessionProvider');
+    throw new Error("useScanSession must be used within ScanSessionProvider");
   }
   return value;
 }

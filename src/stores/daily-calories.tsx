@@ -1,4 +1,4 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useSQLiteContext } from "expo-sqlite";
 import {
   createContext,
   useCallback,
@@ -7,8 +7,8 @@ import {
   useMemo,
   useState,
   type PropsWithChildren,
-} from 'react';
-import { AppState } from 'react-native';
+} from "react";
+import { AppState } from "react-native";
 
 import {
   addFoodEntry as insertFoodEntry,
@@ -20,8 +20,8 @@ import {
   type DailyGoal,
   type FoodEntry,
   type FoodEntryInput,
-} from '@/services/calorieTracking';
-import { useTips } from '@/stores/tips';
+} from "@/services/calorieTracking";
+import { useTips } from "@/stores/tips";
 
 interface DailyCaloriesContextValue {
   goal: DailyGoal | null;
@@ -35,7 +35,9 @@ interface DailyCaloriesContextValue {
   deleteEntry: (id: number) => Promise<void>;
 }
 
-const DailyCaloriesContext = createContext<DailyCaloriesContextValue | null>(null);
+const DailyCaloriesContext = createContext<DailyCaloriesContextValue | null>(
+  null,
+);
 
 export function DailyCaloriesProvider({ children }: PropsWithChildren) {
   const db = useSQLiteContext();
@@ -55,7 +57,9 @@ export function DailyCaloriesProvider({ children }: PropsWithChildren) {
       setGoalState(nextGoal);
       setEntries(todayEntries);
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not load calorie data.');
+      setError(
+        cause instanceof Error ? cause.message : "Could not load calorie data.",
+      );
       throw cause;
     } finally {
       setIsLoading(false);
@@ -66,7 +70,10 @@ export function DailyCaloriesProvider({ children }: PropsWithChildren) {
     try {
       await refreshTips();
     } catch (cause) {
-      console.error('[tips] Could not refresh after calorie data changed:', cause);
+      console.error(
+        "[tips] Could not refresh after calorie data changed:",
+        cause,
+      );
     }
   }, [refreshTips]);
 
@@ -81,15 +88,18 @@ export function DailyCaloriesProvider({ children }: PropsWithChildren) {
     const scheduleNextDayRefresh = () => {
       const nextDay = new Date();
       nextDay.setHours(24, 0, 0, 50);
-      timer = setTimeout(() => {
-        void refresh().catch(() => undefined);
-        scheduleNextDayRefresh();
-      }, Math.max(nextDay.getTime() - Date.now(), 1000));
+      timer = setTimeout(
+        () => {
+          void refresh().catch(() => undefined);
+          scheduleNextDayRefresh();
+        },
+        Math.max(nextDay.getTime() - Date.now(), 1000),
+      );
     };
 
     scheduleNextDayRefresh();
-    const subscription = AppState.addEventListener('change', (state) => {
-      if (state === 'active') {
+    const subscription = AppState.addEventListener("change", (state) => {
+      if (state === "active") {
         void refresh().catch(() => undefined);
       }
     });
@@ -162,13 +172,19 @@ export function DailyCaloriesProvider({ children }: PropsWithChildren) {
     ],
   );
 
-  return <DailyCaloriesContext.Provider value={value}>{children}</DailyCaloriesContext.Provider>;
+  return (
+    <DailyCaloriesContext.Provider value={value}>
+      {children}
+    </DailyCaloriesContext.Provider>
+  );
 }
 
 export function useDailyCalories() {
   const value = useContext(DailyCaloriesContext);
   if (!value) {
-    throw new Error('useDailyCalories must be used within DailyCaloriesProvider');
+    throw new Error(
+      "useDailyCalories must be used within DailyCaloriesProvider",
+    );
   }
   return value;
 }

@@ -1,7 +1,7 @@
-import { TIP_THRESHOLDS } from '@/constants/tips';
+import { TIP_THRESHOLDS } from "@/constants/tips";
 
-import type { TipRule } from '../types';
-import { hasEnoughTrackedDays, makeTip } from './shared';
+import type { TipRule } from "../types";
+import { hasEnoughTrackedDays, makeTip } from "./shared";
 
 const breakfastMissing: TipRule = (stats) => {
   const missingDays = stats.current.breakfastMissingDays;
@@ -15,15 +15,15 @@ const breakfastMissing: TipRule = (stats) => {
 
   return makeTip(
     stats,
-    'breakfast-not-recorded',
-    'info',
-    'tips.breakfast.title',
-    'tips.breakfast.message',
+    "breakfast-not-recorded",
+    "info",
+    "tips.breakfast.title",
+    "tips.breakfast.message",
     { days: missingDays },
     `${missingDays} / 7`,
-    'tips.metric.breakfast',
+    "tips.metric.breakfast",
     missingDays - TIP_THRESHOLDS.breakfastMissingDays,
-    { labelKey: 'tips.action.viewDiary', target: 'calendar' },
+    { labelKey: "tips.action.viewDiary", target: "calendar" },
   );
 };
 

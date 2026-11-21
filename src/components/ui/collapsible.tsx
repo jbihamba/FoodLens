@@ -1,26 +1,37 @@
-import { PropsWithChildren, useState } from 'react';
-import { Pressable } from 'react-native';
-import Animated, { FadeIn } from 'react-native-reanimated';
+import { PropsWithChildren, useState } from "react";
+import { Pressable } from "react-native";
+import Animated, { FadeIn } from "react-native-reanimated";
 
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { StyledSymbolView } from '@/components/nativewind-interop';
+import { ThemedText } from "@/components/themed-text";
+import { ThemedView } from "@/components/themed-view";
+import { StyledSymbolView } from "@/components/nativewind-interop";
 
-export function Collapsible({ children, title }: PropsWithChildren & { title: string }) {
+export function Collapsible({
+  children,
+  title,
+}: PropsWithChildren & { title: string }) {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <ThemedView>
       <Pressable
         className="flex-row items-center gap-2 active:opacity-70"
-        onPress={() => setIsOpen((value) => !value)}>
-        <ThemedView type="backgroundElement" className="h-6 w-6 items-center justify-center rounded-xl">
+        onPress={() => setIsOpen((value) => !value)}
+      >
+        <ThemedView
+          type="backgroundElement"
+          className="h-6 w-6 items-center justify-center rounded-xl"
+        >
           <StyledSymbolView
-            name={{ ios: 'chevron.right', android: 'chevron_right', web: 'chevron_right' }}
+            name={{
+              ios: "chevron.right",
+              android: "chevron_right",
+              web: "chevron_right",
+            }}
             size={14}
             weight="bold"
             className={`text-ink-light dark:text-ink-dark ${
-              isOpen ? 'rotate-[-90deg]' : 'rotate-90'
+              isOpen ? "rotate-[-90deg]" : "rotate-90"
             }`}
           />
         </ThemedView>
@@ -31,7 +42,8 @@ export function Collapsible({ children, title }: PropsWithChildren & { title: st
         <Animated.View entering={FadeIn.duration(200)}>
           <ThemedView
             type="backgroundElement"
-            className="ml-6 mt-4 rounded-2xl p-4">
+            className="ml-6 mt-4 rounded-2xl p-4"
+          >
             {children}
           </ThemedView>
         </Animated.View>

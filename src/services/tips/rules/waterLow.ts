@@ -1,7 +1,7 @@
-import { TIP_THRESHOLDS } from '@/constants/tips';
+import { TIP_THRESHOLDS } from "@/constants/tips";
 
-import type { TipRule } from '../types';
-import { hasEnoughTrackedDays, makeTip } from './shared';
+import type { TipRule } from "../types";
+import { hasEnoughTrackedDays, makeTip } from "./shared";
 
 const waterLow: TipRule = (stats, goals) => {
   const daysReached = stats.current.waterGoalDays;
@@ -17,13 +17,13 @@ const waterLow: TipRule = (stats, goals) => {
 
   return makeTip(
     stats,
-    'water-goal-low',
-    'info',
-    'tips.water.low.title',
-    'tips.water.low.message',
+    "water-goal-low",
+    "info",
+    "tips.water.low.title",
+    "tips.water.low.message",
     { days: daysReached },
     `${daysReached} / 7`,
-    'tips.metric.water',
+    "tips.metric.water",
     TIP_THRESHOLDS.waterGoalDays - daysReached,
   );
 };

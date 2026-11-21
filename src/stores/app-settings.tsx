@@ -1,6 +1,6 @@
-import Constants from 'expo-constants';
-import { useSQLiteContext } from 'expo-sqlite';
-import { StatusBar } from 'expo-status-bar';
+import Constants from "expo-constants";
+import { useSQLiteContext } from "expo-sqlite";
+import { StatusBar } from "expo-status-bar";
 import {
   createContext,
   useCallback,
@@ -9,9 +9,9 @@ import {
   useMemo,
   useState,
   type PropsWithChildren,
-} from 'react';
-import { useColorScheme as useSystemColorScheme } from 'react-native';
-import { useColorScheme as useNativeWindColorScheme } from 'nativewind';
+} from "react";
+import { useColorScheme as useSystemColorScheme } from "react-native";
+import { useColorScheme as useNativeWindColorScheme } from "nativewind";
 
 import {
   DEFAULT_APP_SETTINGS,
@@ -24,15 +24,15 @@ import {
   type MeasurementUnit,
   type ThemePreference,
   type UserProfile,
-} from '@/services/appSettings';
-import type { AppLanguage } from '@/i18n';
+} from "@/services/appSettings";
+import type { AppLanguage } from "@/i18n";
 
 interface AppSettingsContextValue {
   settings: AppSettings;
   isLoading: boolean;
   loadError: string | null;
   version: string;
-  resolvedColorScheme: 'light' | 'dark';
+  resolvedColorScheme: "light" | "dark";
   setTheme: (theme: ThemePreference) => Promise<void>;
   setLanguage: (language: AppLanguage) => Promise<void>;
   setUnits: (units: MeasurementUnit) => Promise<void>;
@@ -62,7 +62,9 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
       .catch((cause: unknown) => {
         if (isCurrent) {
           setLoadError(
-            cause instanceof Error ? cause.message : 'Could not load your preferences.',
+            cause instanceof Error
+              ? cause.message
+              : "Could not load your preferences.",
           );
         }
       })
@@ -110,14 +112,17 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
     [db],
   );
   const resetProfile = useCallback(() => {
-    setSettings((current) => ({ ...current, profile: DEFAULT_APP_SETTINGS.profile }));
+    setSettings((current) => ({
+      ...current,
+      profile: DEFAULT_APP_SETTINGS.profile,
+    }));
   }, []);
 
   const resolvedColorScheme =
-    settings.theme === 'system'
-      ? systemColorScheme === 'dark'
-        ? 'dark'
-        : 'light'
+    settings.theme === "system"
+      ? systemColorScheme === "dark"
+        ? "dark"
+        : "light"
       : settings.theme;
 
   const value = useMemo(
@@ -125,7 +130,7 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
       settings,
       isLoading,
       loadError,
-      version: Constants.expoConfig?.version ?? '1.0.0',
+      version: Constants.expoConfig?.version ?? "1.0.0",
       resolvedColorScheme,
       setTheme,
       setLanguage,
@@ -148,7 +153,7 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
 
   return (
     <AppSettingsContext.Provider value={value}>
-      <StatusBar style={resolvedColorScheme === 'dark' ? 'light' : 'dark'} />
+      <StatusBar style={resolvedColorScheme === "dark" ? "light" : "dark"} />
       {children}
     </AppSettingsContext.Provider>
   );
@@ -157,7 +162,7 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
 export function useAppSettings() {
   const value = useContext(AppSettingsContext);
   if (!value) {
-    throw new Error('useAppSettings must be used within AppSettingsProvider');
+    throw new Error("useAppSettings must be used within AppSettingsProvider");
   }
   return value;
 }

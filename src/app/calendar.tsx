@@ -1,42 +1,42 @@
-import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useState } from 'react';
-import { ActivityIndicator, ScrollView, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useSQLiteContext } from 'expo-sqlite';
+import { router, useFocusEffect } from "expo-router";
+import { useCallback, useMemo, useState } from "react";
+import { ActivityIndicator, ScrollView, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useSQLiteContext } from "expo-sqlite";
 
-import { Pressable, Text } from '@/components/LocalizedText';
+import { Pressable, Text } from "@/components/LocalizedText";
 import {
   DEFAULT_DAILY_GOAL,
   getFoodEntriesForLocalDay,
   getFoodEntriesForLocalMonth,
   type FoodEntry,
-} from '@/services/calorieTracking';
-import { useDailyCalories } from '@/stores/daily-calories';
-import { useAppSettings } from '@/stores/app-settings';
+} from "@/services/calorieTracking";
+import { useDailyCalories } from "@/stores/daily-calories";
+import { useAppSettings } from "@/stores/app-settings";
 
 const MEAL_GROUPS = [
-  { key: 'Breakfast', title: 'Breakfast', icon: '☀' },
-  { key: 'Lunch', title: 'Lunch', icon: '◉' },
-  { key: 'Dinner', title: 'Dinner', icon: '◒' },
-  { key: 'Snack', title: 'Snacks', icon: '✳' },
+  { key: "Breakfast", title: "Breakfast", icon: "☀" },
+  { key: "Lunch", title: "Lunch", icon: "◉" },
+  { key: "Dinner", title: "Dinner", icon: "◒" },
+  { key: "Snack", title: "Snacks", icon: "✳" },
 ] as const;
 
 function getLocalDateKey(date: Date) {
   const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
 }
 
 function formatTime(consumedAt: string, locale: string) {
   const date = new Date(consumedAt);
   return Number.isNaN(date.getTime())
-    ? 'Time unavailable'
-    : date.toLocaleTimeString(locale, { hour: 'numeric', minute: '2-digit' });
+    ? "Time unavailable"
+    : date.toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" });
 }
 
 function getMealGroup(mealType: string | null) {
-  return MEAL_GROUPS.find((group) => group.key === mealType)?.key ?? 'Other';
+  return MEAL_GROUPS.find((group) => group.key === mealType)?.key ?? "Other";
 }
 
 function formatPercentage(value: number) {
@@ -47,11 +47,13 @@ export default function CalendarScreen() {
   const db = useSQLiteContext();
   const { settings } = useAppSettings();
   const { goal } = useDailyCalories();
-  const locale = settings.language === 'fr' ? 'fr-FR' : 'en-US';
+  const locale = settings.language === "fr" ? "fr-FR" : "en-US";
   const weekdays = useMemo(
     () =>
       Array.from({ length: 7 }, (_, index) =>
-        new Date(2024, 0, index + 1).toLocaleDateString(locale, { weekday: 'short' }),
+        new Date(2024, 0, index + 1).toLocaleDateString(locale, {
+          weekday: "short",
+        }),
       ),
     [locale],
   );
@@ -84,7 +86,11 @@ export default function CalendarScreen() {
         })
         .catch((cause: unknown) => {
           if (isCurrent) {
-            setError(cause instanceof Error ? cause.message : 'Could not load your food history.');
+            setError(
+              cause instanceof Error
+                ? cause.message
+                : "Could not load your food history.",
+            );
           }
         })
         .finally(() => {
@@ -139,23 +145,30 @@ export default function CalendarScreen() {
     return groups;
   }, [selectedEntries]);
 
-  const otherEntries = groupedEntries.get('Other') ?? [];
+  const otherEntries = groupedEntries.get("Other") ?? [];
   const displayedGroups = otherEntries.length
-    ? [...MEAL_GROUPS, { key: 'Other', title: 'Other meals', icon: '⋯' }]
+    ? [...MEAL_GROUPS, { key: "Other", title: "Other meals", icon: "⋯" }]
     : MEAL_GROUPS;
-  const totalCalories = selectedEntries.reduce((total, entry) => total + entry.calories, 0);
+  const totalCalories = selectedEntries.reduce(
+    (total, entry) => total + entry.calories,
+    0,
+  );
   const dailyGoal = goal?.target_calories ?? DEFAULT_DAILY_GOAL;
   const completion = dailyGoal > 0 ? (totalCalories / dailyGoal) * 100 : 0;
   const todayKey = getLocalDateKey(new Date());
   const selectedLabel = selectedDate.toLocaleDateString(locale, {
-    weekday: 'long',
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    year: "numeric",
   });
 
   const changeMonth = (amount: number) => {
-    const nextMonth = new Date(viewMonth.getFullYear(), viewMonth.getMonth() + amount, 1);
+    const nextMonth = new Date(
+      viewMonth.getFullYear(),
+      viewMonth.getMonth() + amount,
+      1,
+    );
     const lastDayOfNextMonth = new Date(
       nextMonth.getFullYear(),
       nextMonth.getMonth() + 1,
@@ -180,7 +193,7 @@ export default function CalendarScreen() {
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace('/');
+      router.replace("/");
     }
   };
 
@@ -188,14 +201,18 @@ export default function CalendarScreen() {
     <SafeAreaView className="flex-1 bg-canvas-light dark:bg-canvas-dark">
       <ScrollView
         contentContainerClassName="mx-auto w-full max-w-[560px] self-center px-5 pb-8"
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+      >
         <View className="min-h-[64px] flex-row items-center justify-between">
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Go back"
             onPress={goBack}
-            className="h-11 w-11 items-center justify-center rounded-full bg-surface-light dark:bg-surface-dark">
-            <Text className="text-[22px] text-ink-light dark:text-ink-dark">‹</Text>
+            className="h-11 w-11 items-center justify-center rounded-full bg-surface-light dark:bg-surface-dark"
+          >
+            <Text className="text-[22px] text-ink-light dark:text-ink-dark">
+              ‹
+            </Text>
           </Pressable>
           <Text className="text-[15px] font-bold text-ink-light dark:text-ink-dark">
             Food calendar
@@ -204,8 +221,11 @@ export default function CalendarScreen() {
             accessibilityRole="button"
             accessibilityLabel="Go to today"
             onPress={selectToday}
-            className="min-h-10 items-center justify-center rounded-full bg-brand-secondary px-4 dark:bg-selected-dark">
-            <Text className="text-xs font-bold text-brand-primary dark:text-[#A8C8B2]">Today</Text>
+            className="min-h-10 items-center justify-center rounded-full bg-brand-secondary px-4 dark:bg-selected-dark"
+          >
+            <Text className="text-xs font-bold text-brand-primary dark:text-[#A8C8B2]">
+              Today
+            </Text>
           </Pressable>
         </View>
 
@@ -215,24 +235,36 @@ export default function CalendarScreen() {
               accessibilityRole="button"
               accessibilityLabel="Previous month"
               onPress={() => changeMonth(-1)}
-              className="h-10 w-10 items-center justify-center rounded-full bg-canvas-light dark:bg-canvas-dark">
-              <Text className="text-[22px] text-ink-light dark:text-ink-dark">‹</Text>
+              className="h-10 w-10 items-center justify-center rounded-full bg-canvas-light dark:bg-canvas-dark"
+            >
+              <Text className="text-[22px] text-ink-light dark:text-ink-dark">
+                ‹
+              </Text>
             </Pressable>
             <Text className="text-[17px] font-bold text-ink-light dark:text-ink-dark">
-              {viewMonth.toLocaleDateString(locale, { month: 'long', year: 'numeric' })}
+              {viewMonth.toLocaleDateString(locale, {
+                month: "long",
+                year: "numeric",
+              })}
             </Text>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Next month"
               onPress={() => changeMonth(1)}
-              className="h-10 w-10 items-center justify-center rounded-full bg-canvas-light dark:bg-canvas-dark">
-              <Text className="text-[22px] text-ink-light dark:text-ink-dark">›</Text>
+              className="h-10 w-10 items-center justify-center rounded-full bg-canvas-light dark:bg-canvas-dark"
+            >
+              <Text className="text-[22px] text-ink-light dark:text-ink-dark">
+                ›
+              </Text>
             </Pressable>
           </View>
 
           <View className="mb-2 flex-row">
             {weekdays.map((weekday) => (
-              <View key={weekday} className="h-8 flex-1 items-center justify-center">
+              <View
+                key={weekday}
+                className="h-8 flex-1 items-center justify-center"
+              >
                 <Text className="text-[10px] font-semibold text-muted-light dark:text-muted-dark">
                   {weekday}
                 </Text>
@@ -242,7 +274,12 @@ export default function CalendarScreen() {
           <View className="flex-row flex-wrap">
             {calendarDays.map((date, index) => {
               if (!date) {
-                return <View key={`empty-${index}`} className="h-[50px] w-[14.2857%]" />;
+                return (
+                  <View
+                    key={`empty-${index}`}
+                    className="h-[50px] w-[14.2857%]"
+                  />
+                );
               }
               const dateKey = getLocalDateKey(date);
               const isSelected = dateKey === selectedDateKey;
@@ -253,27 +290,30 @@ export default function CalendarScreen() {
                   key={dateKey}
                   accessibilityRole="button"
                   accessibilityLabel={`${date.toLocaleDateString(locale, {
-                    month: 'long',
-                    day: 'numeric',
-                    year: 'numeric',
-                  })}${hasMeals ? ', meals recorded' : ''}${isToday ? ', today' : ''}`}
+                    month: "long",
+                    day: "numeric",
+                    year: "numeric",
+                  })}${hasMeals ? ", meals recorded" : ""}${isToday ? ", today" : ""}`}
                   accessibilityState={{ selected: isSelected }}
                   onPress={() => setSelectedDate(date)}
-                  className="h-[50px] w-[14.2857%] items-center justify-center">
+                  className="h-[50px] w-[14.2857%] items-center justify-center"
+                >
                   <View
                     className={`h-[37px] w-[37px] items-center justify-center rounded-full ${
                       isSelected
-                        ? 'bg-brand-primary'
+                        ? "bg-brand-primary"
                         : isToday
-                          ? 'border border-brand-primary bg-brand-secondary dark:bg-selected-dark'
-                          : ''
-                    }`}>
+                          ? "border border-brand-primary bg-brand-secondary dark:bg-selected-dark"
+                          : ""
+                    }`}
+                  >
                     <Text
                       className={`text-[13px] font-semibold ${
                         isSelected
-                          ? 'text-white'
-                          : 'text-ink-light dark:text-ink-dark'
-                      }`}>
+                          ? "text-white"
+                          : "text-ink-light dark:text-ink-dark"
+                      }`}
+                    >
                       {date.getDate()}
                     </Text>
                   </View>
@@ -281,9 +321,9 @@ export default function CalendarScreen() {
                     className={`absolute bottom-[3px] h-[5px] w-[5px] rounded-full ${
                       hasMeals
                         ? isSelected
-                          ? 'bg-white'
-                          : 'bg-[#4E9B67]'
-                        : 'bg-transparent'
+                          ? "bg-white"
+                          : "bg-[#4E9B67]"
+                        : "bg-transparent"
                     }`}
                   />
                 </Pressable>
@@ -296,7 +336,9 @@ export default function CalendarScreen() {
               Meals recorded
             </Text>
             <View className="ml-3 h-3 w-3 rounded-full border border-brand-primary bg-brand-secondary dark:bg-selected-dark" />
-            <Text className="text-[10px] text-muted-light dark:text-muted-dark">Today</Text>
+            <Text className="text-[10px] text-muted-light dark:text-muted-dark">
+              Today
+            </Text>
           </View>
         </View>
 
@@ -321,7 +363,8 @@ export default function CalendarScreen() {
                   <Text className="text-[28px] font-bold tracking-[-0.8px] text-ink-light dark:text-ink-dark">
                     {totalCalories.toLocaleString()}
                     <Text className="text-[13px] font-semibold text-muted-light dark:text-muted-dark">
-                      {' '}kcal
+                      {" "}
+                      kcal
                     </Text>
                   </Text>
                   <Text className="mt-1 text-[11px] text-muted-light dark:text-muted-dark">
@@ -333,7 +376,8 @@ export default function CalendarScreen() {
                     {formatPercentage(completion)}
                   </Text>
                   <Text className="mt-1 text-[11px] text-muted-light dark:text-muted-dark">
-                    {selectedEntries.length} {selectedEntries.length === 1 ? 'meal' : 'meals'}
+                    {selectedEntries.length}{" "}
+                    {selectedEntries.length === 1 ? "meal" : "meals"}
                   </Text>
                 </View>
               </View>
@@ -348,7 +392,10 @@ export default function CalendarScreen() {
         </View>
 
         {error ? (
-          <Text accessibilityRole="alert" className="mt-3 text-xs leading-5 text-[#A53F35]">
+          <Text
+            accessibilityRole="alert"
+            className="mt-3 text-xs leading-5 text-[#A53F35]"
+          >
             {error}
           </Text>
         ) : null}
@@ -360,11 +407,15 @@ export default function CalendarScreen() {
                 Meal history
               </Text>
               <Text className="mt-1 text-[11px] text-muted-light dark:text-muted-dark">
-                {selectedDate.toLocaleDateString(locale, { month: 'long', day: 'numeric' })}
+                {selectedDate.toLocaleDateString(locale, {
+                  month: "long",
+                  day: "numeric",
+                })}
               </Text>
             </View>
             <Text className="text-[10px] font-bold tracking-[0.7px] text-brand-primary dark:text-[#A8C8B2]">
-              {selectedEntries.length} {selectedEntries.length === 1 ? 'MEAL' : 'MEALS'}
+              {selectedEntries.length}{" "}
+              {selectedEntries.length === 1 ? "MEAL" : "MEALS"}
             </Text>
           </View>
 
@@ -391,7 +442,8 @@ export default function CalendarScreen() {
                 return (
                   <View
                     key={group.key}
-                    className="overflow-hidden rounded-[20px] border-[0.5px] border-selected-light bg-surface-light dark:border-selected-dark dark:bg-surface-dark">
+                    className="overflow-hidden rounded-[20px] border-[0.5px] border-selected-light bg-surface-light dark:border-selected-dark dark:bg-surface-dark"
+                  >
                     <View className="flex-row items-center gap-2 border-b border-brand-border px-4 py-3 dark:border-selected-dark">
                       <Text className="text-[14px] font-bold text-brand-primary dark:text-[#A8C8B2]">
                         {group.icon}
@@ -400,18 +452,23 @@ export default function CalendarScreen() {
                         {group.title}
                       </Text>
                       <Text className="text-[10px] text-muted-light dark:text-muted-dark">
-                        {meals.reduce((sum, entry) => sum + entry.calories, 0).toLocaleString()} kcal
+                        {meals
+                          .reduce((sum, entry) => sum + entry.calories, 0)
+                          .toLocaleString()}{" "}
+                        kcal
                       </Text>
                     </View>
                     {meals.map((entry) => (
                       <View
                         key={entry.id}
-                        className="min-h-[58px] flex-row items-center gap-3 border-b border-brand-border px-4 py-3 last:border-b-0 dark:border-selected-dark">
+                        className="min-h-[58px] flex-row items-center gap-3 border-b border-brand-border px-4 py-3 last:border-b-0 dark:border-selected-dark"
+                      >
                         <View className="h-2 w-2 rounded-full bg-brand-secondary dark:bg-selected-dark" />
                         <View className="flex-1">
                           <Text
                             numberOfLines={1}
-                            className="text-[13px] font-semibold text-ink-light dark:text-ink-dark">
+                            className="text-[13px] font-semibold text-ink-light dark:text-ink-dark"
+                          >
                             {entry.food_name}
                           </Text>
                           <Text className="mt-1 text-[10px] text-muted-light dark:text-muted-dark">

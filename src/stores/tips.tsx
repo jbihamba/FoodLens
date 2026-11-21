@@ -1,4 +1,4 @@
-import { useSQLiteContext } from 'expo-sqlite';
+import { useSQLiteContext } from "expo-sqlite";
 import {
   createContext,
   useCallback,
@@ -8,13 +8,17 @@ import {
   useRef,
   useState,
   type PropsWithChildren,
-} from 'react';
+} from "react";
 
-import { generateTips } from '@/services/tips/engine';
-import { dismissTipRule, readTipHistory, writeTipHistory } from '@/services/tips/history';
-import { getTipStats } from '@/services/tips/stats';
-import type { Tip, TipStats, TipHistory } from '@/services/tips/types';
-import { useAppSettings } from '@/stores/app-settings';
+import { generateTips } from "@/services/tips/engine";
+import {
+  dismissTipRule,
+  readTipHistory,
+  writeTipHistory,
+} from "@/services/tips/history";
+import { getTipStats } from "@/services/tips/stats";
+import type { Tip, TipStats, TipHistory } from "@/services/tips/types";
+import { useAppSettings } from "@/stores/app-settings";
 
 interface TipsContextValue {
   tips: Tip[];
@@ -85,7 +89,9 @@ export function TipsProvider({ children }: PropsWithChildren) {
           setStats(nextStats);
         } catch (cause) {
           const message =
-            cause instanceof Error ? cause.message : 'Tips could not be updated.';
+            cause instanceof Error
+              ? cause.message
+              : "Tips could not be updated.";
           setError(message);
           throw cause;
         } finally {
@@ -101,12 +107,16 @@ export function TipsProvider({ children }: PropsWithChildren) {
         setError(null);
         try {
           await dismissTipRule(ruleId);
-          const nextTips = tipsRef.current.filter((tip) => tip.ruleId !== ruleId);
+          const nextTips = tipsRef.current.filter(
+            (tip) => tip.ruleId !== ruleId,
+          );
           tipsRef.current = nextTips;
           setTips(nextTips);
         } catch (cause) {
           const message =
-            cause instanceof Error ? cause.message : 'Tip could not be dismissed.';
+            cause instanceof Error
+              ? cause.message
+              : "Tip could not be dismissed.";
           setError(message);
           throw cause;
         }
@@ -129,7 +139,7 @@ export function TipsProvider({ children }: PropsWithChildren) {
 export function useTips() {
   const value = useContext(TipsContext);
   if (!value) {
-    throw new Error('useTips must be used within TipsProvider');
+    throw new Error("useTips must be used within TipsProvider");
   }
   return value;
 }

@@ -1,28 +1,35 @@
-import { router } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { router } from "expo-router";
+import { useEffect, useState } from "react";
 import {
   KeyboardAvoidingView,
   Modal,
   Platform,
   ScrollView,
   View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import Animated, { FadeInDown } from 'react-native-reanimated';
-import { useSQLiteContext } from 'expo-sqlite';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import Animated, { FadeInDown } from "react-native-reanimated";
+import { useSQLiteContext } from "expo-sqlite";
 
-import { BrandMark } from '@/components/food/BrandMark';
-import { Pressable, Text, TextInput } from '@/components/LocalizedText';
-import { clearPersonalData, getLocalDataSummary } from '@/services/appSettings';
-import type { MeasurementUnit, ThemePreference, UserProfile } from '@/services/appSettings';
-import { useAppSettings } from '@/stores/app-settings';
-import { useDailyCalories } from '@/stores/daily-calories';
+import { BrandMark } from "@/components/food/BrandMark";
+import { Pressable, Text, TextInput } from "@/components/LocalizedText";
+import { clearPersonalData, getLocalDataSummary } from "@/services/appSettings";
+import type {
+  MeasurementUnit,
+  ThemePreference,
+  UserProfile,
+} from "@/services/appSettings";
+import { useAppSettings } from "@/stores/app-settings";
+import { useDailyCalories } from "@/stores/daily-calories";
 
 function SectionHeading({ icon, title }: { icon: string; title: string }) {
   return (
     <View className="mb-[11px] mt-[25px] flex-row items-center gap-[10px]">
       <View className="h-[32px] w-[32px] items-center justify-center rounded-[11px] bg-brand-secondary dark:bg-selected-dark">
-        <Text aria-hidden className="text-sm font-bold text-brand-primary dark:text-[#A8C8B2]">
+        <Text
+          aria-hidden
+          className="text-sm font-bold text-brand-primary dark:text-[#A8C8B2]"
+        >
           {icon}
         </Text>
       </View>
@@ -51,12 +58,14 @@ function Choice({
       disabled={disabled}
       onPress={onPress}
       className={`min-h-[43px] flex-1 items-center justify-center rounded-[14px] px-2 disabled:opacity-60 ${
-        selected ? 'bg-brand-primary' : 'bg-canvas-light dark:bg-canvas-dark'
-      }`}>
+        selected ? "bg-brand-primary" : "bg-canvas-light dark:bg-canvas-dark"
+      }`}
+    >
       <Text
         className={`text-xs font-bold ${
-          selected ? 'text-white' : 'text-muted-light dark:text-muted-dark'
-        }`}>
+          selected ? "text-white" : "text-muted-light dark:text-muted-dark"
+        }`}
+      >
         {label}
       </Text>
     </Pressable>
@@ -86,7 +95,9 @@ function ProfileEditor({
           accessibilityLabel="Your name"
           className="min-h-[48px] rounded-[13px] border border-brand-border px-[13px] text-sm text-ink-light dark:border-selected-dark dark:text-ink-dark"
           value={draft.displayName}
-          onChangeText={(displayName) => setDraft((current) => ({ ...current, displayName }))}
+          onChangeText={(displayName) =>
+            setDraft((current) => ({ ...current, displayName }))
+          }
           placeholder="Your name"
           placeholderTextColor="#68736B"
           maxLength={60}
@@ -102,7 +113,9 @@ function ProfileEditor({
           accessibilityLabel="Your profile information"
           className="min-h-[86px] rounded-[13px] border border-brand-border px-[13px] py-3 text-sm text-ink-light dark:border-selected-dark dark:text-ink-dark"
           value={draft.profileInfo}
-          onChangeText={(profileInfo) => setDraft((current) => ({ ...current, profileInfo }))}
+          onChangeText={(profileInfo) =>
+            setDraft((current) => ({ ...current, profileInfo }))
+          }
           placeholder="Add a few details about yourself"
           placeholderTextColor="#68736B"
           maxLength={240}
@@ -120,9 +133,10 @@ function ProfileEditor({
             profileInfo: draft.profileInfo.trim(),
           })
         }
-        className="min-h-[48px] items-center justify-center rounded-[14px] bg-brand-primary disabled:opacity-60">
+        className="min-h-[48px] items-center justify-center rounded-[14px] bg-brand-primary disabled:opacity-60"
+      >
         <Text className="text-sm font-bold text-white">
-          {saving ? 'Saving…' : 'Save profile'}
+          {saving ? "Saving…" : "Save profile"}
         </Text>
       </Pressable>
       <Text className="text-[11px] text-muted-light dark:text-muted-dark">
@@ -132,12 +146,12 @@ function ProfileEditor({
   );
 }
 
-function formatBytes(bytes: number, language: 'en' | 'fr') {
+function formatBytes(bytes: number, language: "en" | "fr") {
   if (bytes < 1024) {
     return `${bytes} B`;
   }
   const kilobytes = bytes / 1024;
-  return `~${kilobytes.toLocaleString(language === 'fr' ? 'fr-FR' : 'en-US', {
+  return `~${kilobytes.toLocaleString(language === "fr" ? "fr-FR" : "en-US", {
     maximumFractionDigits: 1,
   })} KB`;
 }
@@ -176,7 +190,11 @@ export default function SettingsScreen() {
       })
       .catch((cause: unknown) => {
         if (isCurrent) {
-          setError(cause instanceof Error ? cause.message : 'Could not read local storage.');
+          setError(
+            cause instanceof Error
+              ? cause.message
+              : "Could not read local storage.",
+          );
         }
       })
       .finally(() => {
@@ -199,9 +217,11 @@ export default function SettingsScreen() {
         displayName: profile.displayName,
         profileInfo: profile.profileInfo,
       });
-      setNotice('Profile saved on this device.');
+      setNotice("Profile saved on this device.");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not save your profile.');
+      setError(
+        cause instanceof Error ? cause.message : "Could not save your profile.",
+      );
     } finally {
       setIsSavingProfile(false);
     }
@@ -213,7 +233,11 @@ export default function SettingsScreen() {
     try {
       await update();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not save your preference.');
+      setError(
+        cause instanceof Error
+          ? cause.message
+          : "Could not save your preference.",
+      );
     }
   };
 
@@ -232,40 +256,49 @@ export default function SettingsScreen() {
       setEntryCount(summary?.entry_count ?? 0);
       setEstimatedBytes(summary?.estimated_bytes ?? 0);
       setShowClearConfirmation(false);
-      setNotice('Your meals, daily goal, and profile were cleared.');
+      setNotice("Your meals, daily goal, and profile were cleared.");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : 'Could not clear local data.');
+      setError(
+        cause instanceof Error ? cause.message : "Could not clear local data.",
+      );
     } finally {
       setIsClearingData(false);
     }
   };
 
   const themes: { value: ThemePreference; label: string }[] = [
-    { value: 'light', label: 'Light' },
-    { value: 'dark', label: 'Dark' },
-    { value: 'system', label: 'System' },
+    { value: "light", label: "Light" },
+    { value: "dark", label: "Dark" },
+    { value: "system", label: "System" },
   ];
   const measurementUnits: { value: MeasurementUnit; label: string }[] = [
-    { value: 'metric', label: 'Metric' },
-    { value: 'imperial', label: 'Imperial' },
+    { value: "metric", label: "Metric" },
+    { value: "imperial", label: "Imperial" },
   ];
 
   return (
     <SafeAreaView className="flex-1 bg-canvas-light dark:bg-canvas-dark">
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
         <ScrollView
           contentContainerClassName="mx-auto w-full max-w-[560px] px-5 pb-10 sm:px-6"
           keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}>
+          showsVerticalScrollIndicator={false}
+        >
           <View className="min-h-[64px] flex-row items-center justify-between">
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Go back"
-              onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-              className="h-11 w-11 items-center justify-center rounded-full bg-surface-light dark:bg-surface-dark">
-              <Text className="text-[22px] text-ink-light dark:text-ink-dark">‹</Text>
+              onPress={() =>
+                router.canGoBack() ? router.back() : router.replace("/")
+              }
+              className="h-11 w-11 items-center justify-center rounded-full bg-surface-light dark:bg-surface-dark"
+            >
+              <Text className="text-[22px] text-ink-light dark:text-ink-dark">
+                ‹
+              </Text>
             </Pressable>
             <View className="flex-row items-center gap-2">
               <BrandMark size={34} />
@@ -296,7 +329,9 @@ export default function SettingsScreen() {
                     label={theme.label}
                     selected={settings.theme === theme.value}
                     disabled={isLoading}
-                    onPress={() => void updateSetting(() => setTheme(theme.value))}
+                    onPress={() =>
+                      void updateSetting(() => setTheme(theme.value))
+                    }
                   />
                 ))}
               </View>
@@ -307,15 +342,15 @@ export default function SettingsScreen() {
               <View className="flex-row gap-1">
                 <Choice
                   label="English"
-                  selected={settings.language === 'en'}
+                  selected={settings.language === "en"}
                   disabled={isLoading}
-                  onPress={() => void updateSetting(() => setLanguage('en'))}
+                  onPress={() => void updateSetting(() => setLanguage("en"))}
                 />
                 <Choice
                   label="French"
-                  selected={settings.language === 'fr'}
+                  selected={settings.language === "fr"}
                   disabled={isLoading}
-                  onPress={() => void updateSetting(() => setLanguage('fr'))}
+                  onPress={() => void updateSetting(() => setLanguage("fr"))}
                 />
               </View>
             </View>
@@ -329,12 +364,15 @@ export default function SettingsScreen() {
                     label={unit.label}
                     selected={settings.units === unit.value}
                     disabled={isLoading}
-                    onPress={() => void updateSetting(() => setUnits(unit.value))}
+                    onPress={() =>
+                      void updateSetting(() => setUnits(unit.value))
+                    }
                   />
                 ))}
               </View>
               <Text className="px-3 pb-2 pt-3 text-[11px] leading-[17px] text-muted-light dark:text-muted-dark">
-                Nutrition is always stored and shown in kcal and grams. This preference applies to other measurements when available.
+                Nutrition is always stored and shown in kcal and grams. This
+                preference applies to other measurements when available.
               </Text>
             </View>
 
@@ -356,22 +394,27 @@ export default function SettingsScreen() {
                   </Text>
                   <Text className="mt-1 text-[11px] leading-4 text-muted-light dark:text-muted-dark">
                     {isRefreshingStorage || entryCount === null
-                      ? 'Calculating local storage…'
-                      : `${entryCount} ${entryCount === 1 ? 'meal' : 'meals'} · ${formatBytes(estimatedBytes ?? 0, settings.language)}`}
+                      ? "Calculating local storage…"
+                      : `${entryCount} ${entryCount === 1 ? "meal" : "meals"} · ${formatBytes(estimatedBytes ?? 0, settings.language)}`}
                   </Text>
                 </View>
-                <Text aria-hidden className="text-[20px] text-brand-primary dark:text-[#A8C8B2]">
+                <Text
+                  aria-hidden
+                  className="text-[20px] text-brand-primary dark:text-[#A8C8B2]"
+                >
                   ⌂
                 </Text>
               </View>
               <Text className="mt-2 text-[10px] leading-[15px] text-muted-light dark:text-muted-dark">
-                Estimated from saved meal records; image files and database overhead are not included.
+                Estimated from saved meal records; image files and database
+                overhead are not included.
               </Text>
               <Pressable
                 accessibilityRole="button"
                 disabled={isLoading || isClearingData}
                 onPress={() => setShowClearConfirmation(true)}
-                className="mt-4 min-h-[46px] items-center justify-center rounded-[14px] border border-[#E8C8C4] disabled:opacity-60 dark:border-[#70443F]">
+                className="mt-4 min-h-[46px] items-center justify-center rounded-[14px] border border-[#E8C8C4] disabled:opacity-60 dark:border-[#70443F]"
+              >
                 <Text className="text-sm font-bold text-[#A53F35] dark:text-[#F2A097]">
                   Clear local data
                 </Text>
@@ -392,14 +435,17 @@ export default function SettingsScreen() {
                 </View>
               </View>
               <Text className="mt-4 text-[12px] leading-[18px] text-muted-light dark:text-muted-dark">
-                A mindful meal companion that helps you explore food and nutrition.
+                A mindful meal companion that helps you explore food and
+                nutrition.
               </Text>
               <View className="my-4 h-px bg-brand-border dark:bg-selected-dark" />
               <Text className="text-xs font-bold text-ink-light dark:text-ink-dark">
                 Privacy
               </Text>
               <Text className="mt-1 text-[11px] leading-[17px] text-muted-light dark:text-muted-dark">
-                Your food diary and profile stay on this device. When you scan a meal, its photo is sent to the configured analysis service to create an estimate, which may forward it to Google.
+                Your food diary and profile stay on this device. When you scan a
+                meal, its photo is sent to the configured analysis service to
+                create an estimate, which may forward it to Google.
               </Text>
               <Text className="mt-3 text-xs font-bold text-ink-light dark:text-ink-dark">
                 Credits
@@ -410,12 +456,18 @@ export default function SettingsScreen() {
             </View>
 
             {loadError || error ? (
-              <Text accessibilityRole="alert" className="mt-4 text-xs leading-[18px] text-[#A53F35]">
+              <Text
+                accessibilityRole="alert"
+                className="mt-4 text-xs leading-[18px] text-[#A53F35]"
+              >
                 {error ?? loadError}
               </Text>
             ) : null}
             {notice ? (
-              <Text accessibilityRole="alert" className="mt-4 text-xs leading-[18px] text-brand-primary dark:text-[#A8C8B2]">
+              <Text
+                accessibilityRole="alert"
+                className="mt-4 text-xs leading-[18px] text-brand-primary dark:text-[#A8C8B2]"
+              >
                 {notice}
               </Text>
             ) : null}
@@ -431,17 +483,23 @@ export default function SettingsScreen() {
           if (!isClearingData) {
             setShowClearConfirmation(false);
           }
-        }}>
+        }}
+      >
         <View className="flex-1 items-center justify-center bg-black/45 px-6">
           <View className="w-full max-w-[390px] rounded-[24px] bg-surface-light p-5 dark:bg-surface-dark">
             <Text className="text-[19px] font-bold text-ink-light dark:text-ink-dark">
               Clear local data?
             </Text>
             <Text className="mt-2 text-[13px] leading-5 text-muted-light dark:text-muted-dark">
-              This permanently removes your meal history and profile, and resets your daily goal. Your language, appearance, and onboarding settings will stay.
+              This permanently removes your meal history and profile, and resets
+              your daily goal. Your language, appearance, and onboarding
+              settings will stay.
             </Text>
             {error ? (
-              <Text accessibilityRole="alert" className="mt-3 text-xs leading-[18px] text-[#A53F35]">
+              <Text
+                accessibilityRole="alert"
+                className="mt-3 text-xs leading-[18px] text-[#A53F35]"
+              >
                 {error}
               </Text>
             ) : null}
@@ -450,7 +508,8 @@ export default function SettingsScreen() {
                 accessibilityRole="button"
                 disabled={isClearingData}
                 onPress={() => setShowClearConfirmation(false)}
-                className="min-h-[48px] flex-1 items-center justify-center rounded-[15px] bg-canvas-light dark:bg-canvas-dark">
+                className="min-h-[48px] flex-1 items-center justify-center rounded-[15px] bg-canvas-light dark:bg-canvas-dark"
+              >
                 <Text className="text-sm font-bold text-ink-light dark:text-ink-dark">
                   Cancel
                 </Text>
@@ -459,9 +518,10 @@ export default function SettingsScreen() {
                 accessibilityRole="button"
                 disabled={isClearingData}
                 onPress={() => void clearData()}
-                className="min-h-[48px] flex-1 items-center justify-center rounded-[15px] bg-[#A53F35] disabled:opacity-60">
+                className="min-h-[48px] flex-1 items-center justify-center rounded-[15px] bg-[#A53F35] disabled:opacity-60"
+              >
                 <Text className="text-sm font-bold text-white">
-                  {isClearingData ? 'Clearing…' : 'Clear data'}
+                  {isClearingData ? "Clearing…" : "Clear data"}
                 </Text>
               </Pressable>
             </View>

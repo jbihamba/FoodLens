@@ -1,15 +1,15 @@
-import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
-import * as ImagePicker from 'expo-image-picker';
+import { ImageManipulator, SaveFormat } from "expo-image-manipulator";
+import * as ImagePicker from "expo-image-picker";
 
 const MAX_IMAGE_DIMENSION = 1280;
 
 export class ImageSelectionError extends Error {
   constructor(
     message: string,
-    readonly kind: 'invalid-image' | 'picker',
+    readonly kind: "invalid-image" | "picker",
   ) {
     super(message);
-    this.name = 'ImageSelectionError';
+    this.name = "ImageSelectionError";
   }
 }
 
@@ -21,7 +21,7 @@ export interface SelectedFoodImage {
 export async function selectFoodImage(): Promise<SelectedFoodImage | null> {
   try {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
+      mediaTypes: ["images"],
       quality: 0.8,
     });
 
@@ -32,19 +32,24 @@ export async function selectFoodImage(): Promise<SelectedFoodImage | null> {
     const asset = result.assets[0];
     if (!asset?.uri) {
       throw new ImageSelectionError(
-        'That file could not be used. Choose a different food photo.',
-        'invalid-image',
+        "That file could not be used. Choose a different food photo.",
+        "invalid-image",
       );
     }
 
-    return await prepareFoodImage(asset.uri, asset.width, asset.height, asset.mimeType);
+    return await prepareFoodImage(
+      asset.uri,
+      asset.width,
+      asset.height,
+      asset.mimeType,
+    );
   } catch (error) {
     if (error instanceof ImageSelectionError) {
       throw error;
     }
     throw new ImageSelectionError(
-      'We could not open or prepare that image. Please try again.',
-      'picker',
+      "We could not open or prepare that image. Please try again.",
+      "picker",
     );
   }
 }
@@ -60,15 +65,18 @@ export async function prepareFoodImage(
       !uri ||
       sourceWidth <= 0 ||
       sourceHeight <= 0 ||
-      (mimeType && !mimeType.startsWith('image/'))
+      (mimeType && !mimeType.startsWith("image/"))
     ) {
       throw new ImageSelectionError(
-        'That file could not be used. Choose a different food photo.',
-        'invalid-image',
+        "That file could not be used. Choose a different food photo.",
+        "invalid-image",
       );
     }
 
-    const scale = Math.min(1, MAX_IMAGE_DIMENSION / Math.max(sourceWidth, sourceHeight));
+    const scale = Math.min(
+      1,
+      MAX_IMAGE_DIMENSION / Math.max(sourceWidth, sourceHeight),
+    );
     const width = Math.max(1, Math.round(sourceWidth * scale));
     const height = Math.max(1, Math.round(sourceHeight * scale));
     const context = ImageManipulator.manipulate(uri, {
@@ -87,11 +95,14 @@ export async function prepareFoodImage(
         });
         if (!optimizedImage.base64) {
           throw new ImageSelectionError(
-            'We could not prepare that photo. Please try another image.',
-            'invalid-image',
+            "We could not prepare that photo. Please try another image.",
+            "invalid-image",
           );
         }
-        selectedImage = { uri: optimizedImage.uri, base64: optimizedImage.base64 };
+        selectedImage = {
+          uri: optimizedImage.uri,
+          base64: optimizedImage.base64,
+        };
       } finally {
         imageRef.release();
       }
@@ -101,8 +112,8 @@ export async function prepareFoodImage(
 
     if (!selectedImage) {
       throw new ImageSelectionError(
-        'We could not prepare that photo. Please try another image.',
-        'invalid-image',
+        "We could not prepare that photo. Please try another image.",
+        "invalid-image",
       );
     }
 
@@ -112,8 +123,8 @@ export async function prepareFoodImage(
       throw error;
     }
     throw new ImageSelectionError(
-      'We could not prepare that photo. Please try another image.',
-      'picker',
+      "We could not prepare that photo. Please try another image.",
+      "picker",
     );
   }
 }

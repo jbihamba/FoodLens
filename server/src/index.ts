@@ -1,7 +1,15 @@
-import { createServer, type IncomingMessage, type ServerResponse } from 'node:http';
-import { pathToFileURL } from 'node:url';
+import {
+  createServer,
+  type IncomingMessage,
+  type ServerResponse,
+} from "node:http";
+import { pathToFileURL } from "node:url";
 
-import { decodeJpegBase64, RecognitionError, recognizeFood } from './food-recognition.js';
+import {
+  decodeJpegBase64,
+  RecognitionError,
+  recognizeFood,
+} from "./food-recognition.js";
 
 const MAX_BODY_BYTES = 7_000_000;
 const RATE_LIMIT_WINDOW_MS = 60_000;
@@ -20,15 +28,15 @@ class RequestError extends Error {
     message: string,
   ) {
     super(message);
-    this.name = 'RequestError';
+    this.name = "RequestError";
   }
 }
 
 function sendJson(response: ServerResponse, status: number, body: unknown) {
   response.writeHead(status, {
-    'Content-Type': 'application/json; charset=utf-8',
-    'Cache-Control': 'no-store',
-    'X-Content-Type-Options': 'nosniff',
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "no-store",
+    "X-Content-Type-Options": "nosniff",
   });
   response.end(JSON.stringify(body));
 }
@@ -40,15 +48,23 @@ async function readJsonBody(request: IncomingMessage): Promise<unknown> {
     const bytes = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk);
     totalBytes += bytes.length;
     if (totalBytes > MAX_BODY_BYTES) {
-      throw new RequestError(413, 'payload_too_large', 'Photo is too large to analyze.');
+      throw new RequestError(
+        413,
+        "payload_too_large",
+        "Photo is too large to analyze.",
+      );
     }
     chunks.push(bytes);
   }
 
   try {
-    return JSON.parse(Buffer.concat(chunks).toString('utf8')) as unknown;
+    return JSON.parse(Buffer.concat(chunks).toString("utf8")) as unknown;
   } catch {
-    throw new RequestError(400, 'invalid_request', 'Request must contain valid JSON.');
+    throw new RequestError(
+      400,
+      "invalid_request",
+      "Request must contain valid JSON.",
+    );
   }
 }
 
@@ -69,33 +85,35 @@ function createRateLimiter() {
 export function createAppServer() {
   const allowRequest = createRateLimiter();
   return createServer(async (request, response) => {
-    if (request.method === 'GET' && request.url === '/health') {
-      sendJson(response, 200, { status: 'ok' });
+    if (request.method === "GET" && request.url === "/health") {
+      sendJson(response, 200, { status: "ok" });
       return;
     }
 
-    if (request.method !== 'POST' || request.url !== '/v1/food/analyze') {
-      sendJson(response, 404, { error: { code: 'not_found', message: 'Route not found.' } });
+    if (request.method !== "POST" || request.url !== "/v1/food/analyze") {
+      sendJson(response, 404, {
+        error: { code: "not_found", message: "Route not found." },
+      });
       return;
     }
 
     const requestStartedAt = Date.now();
-    console.info('[food-recognition] Analysis request received.');
+    console.info("[food-recognition] Analysis request received.");
 
-    const ipAddress = request.socket.remoteAddress ?? 'unknown';
+    const ipAddress = request.socket.remoteAddress ?? "unknown";
     if (!allowRequest(ipAddress)) {
       sendJson(response, 429, {
         error: {
-          code: 'rate_limited',
-          message: 'Too many meal scans. Please wait a moment and try again.',
+          code: "rate_limited",
+          message: "Too many meal scans. Please wait a moment and try again.",
         },
       });
       return;
     }
 
-    if (!request.headers['content-type']?.includes('application/json')) {
+    if (!request.headers["content-type"]?.includes("application/json")) {
       sendJson(response, 415, {
-        error: { code: 'invalid_request', message: 'Request must use JSON.' },
+        error: { code: "invalid_request", message: "Request must use JSON." },
       });
       return;
     }
@@ -103,11 +121,15 @@ export function createAppServer() {
     try {
       const body = await readJsonBody(request);
       const imageBase64 =
-        body && typeof body === 'object'
+        body && typeof body === "object"
           ? (body as { imageBase64?: unknown }).imageBase64
           : undefined;
-      if (typeof imageBase64 !== 'string') {
-        throw new RecognitionError('invalid_image', 400, 'Choose a valid JPEG image.');
+      if (typeof imageBase64 !== "string") {
+        throw new RecognitionError(
+          "invalid_image",
+          400,
+          "Choose a valid JPEG image.",
+        );
       }
       decodeJpegBase64(imageBase64);
       console.info(
@@ -116,18 +138,20 @@ export function createAppServer() {
 
       const apiKey = process.env.GEMINI_API_KEY;
       if (!apiKey) {
-        console.error('[food-recognition] GEMINI_API_KEY is not configured.');
+        console.error("[food-recognition] GEMINI_API_KEY is not configured.");
         sendJson(response, 503, {
           error: {
-            code: 'service_unavailable',
-            message: 'Meal analysis is not configured yet.',
+            code: "service_unavailable",
+            message: "Meal analysis is not configured yet.",
           },
         });
         return;
       }
 
       const model = process.env.GEMINI_MODEL?.trim() || undefined;
-      console.info('[food-recognition] Sending photo to the recognition provider.');
+      console.info(
+        "[food-recognition] Sending photo to the recognition provider.",
+      );
       const analysis = await recognizeFood(imageBase64, apiKey, model);
       console.info(
         `[food-recognition] Analysis completed in ${Date.now() - requestStartedAt} ms.`,
@@ -142,22 +166,25 @@ export function createAppServer() {
       }
 
       console.error(
-        '[food-recognition] Unexpected request failure.',
-        error instanceof Error ? error.message : 'Unknown error',
+        "[food-recognition] Unexpected request failure.",
+        error instanceof Error ? error.message : "Unknown error",
       );
       sendJson(response, 500, {
         error: {
-          code: 'internal_error',
-          message: 'Meal analysis could not be completed.',
+          code: "internal_error",
+          message: "Meal analysis could not be completed.",
         },
       });
     }
   });
 }
 
-if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
+if (
+  process.argv[1] &&
+  import.meta.url === pathToFileURL(process.argv[1]).href
+) {
   const server = createAppServer();
-  server.listen(PORT, '0.0.0.0', () => {
+  server.listen(PORT, "0.0.0.0", () => {
     console.info(`FoodLens API listening on port ${PORT}.`);
   });
 }

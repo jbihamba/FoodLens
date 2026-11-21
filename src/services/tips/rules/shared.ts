@@ -1,4 +1,4 @@
-import { TIP_THRESHOLDS } from '@/constants/tips';
+import { TIP_THRESHOLDS } from "@/constants/tips";
 
 import type {
   Tip,
@@ -7,8 +7,8 @@ import type {
   TipProfile,
   TipSeverity,
   TipStats,
-} from '../types';
-import type { TipTextKey, TipTranslationParams } from '@/i18n/tips';
+} from "../types";
+import type { TipTextKey, TipTranslationParams } from "@/i18n/tips";
 
 export function hasEnoughTrackedDays(stats: TipStats) {
   return stats.current.trackedDays >= TIP_THRESHOLDS.minimumTrackedDays;
