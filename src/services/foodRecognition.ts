@@ -61,6 +61,7 @@ function isTimeoutError(error: unknown): boolean {
 
 export async function analyzeFoodImage(
   imageBase64: string,
+  signal?: AbortSignal,
 ): Promise<FoodAnalysis> {
   if (!API_URL) {
     throw new FoodRecognitionError(
@@ -76,6 +77,8 @@ export async function analyzeFoodImage(
   }
 
   const controller = new AbortController();
+  const abortFromCaller = () => controller.abort();
+  signal?.addEventListener("abort", abortFromCaller, { once: true });
   const timeout = setTimeout(() => controller.abort(), 100_000);
   let response: Response;
   try {
@@ -105,6 +108,7 @@ export async function analyzeFoodImage(
     );
   } finally {
     clearTimeout(timeout);
+    signal?.removeEventListener("abort", abortFromCaller);
   }
 
   if (!response.ok) {

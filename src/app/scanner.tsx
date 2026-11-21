@@ -20,10 +20,6 @@ import { Pressable, Text } from "@/components/LocalizedText";
 import { StyledImage } from "@/components/nativewind-interop";
 import { theme } from "@/constants/theme";
 import {
-  FoodRecognitionError,
-  analyzeFoodImage,
-} from "@/services/foodRecognition";
-import {
   ImageSelectionError,
   prepareFoodImage,
   selectFoodImage,
@@ -51,7 +47,6 @@ export default function ScannerScreen() {
   const [isPickingImage, setIsPickingImage] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [isPreparingImage, setIsPreparingImage] = useState(false);
-  const [isAnalyzing, setIsAnalyzing] = useState(false);
   const cameraRef = useRef<CameraView>(null);
   const autoOpenedGallery = useRef(false);
   const captureHapticPending = useRef(false);
@@ -178,26 +173,14 @@ export default function ScannerScreen() {
     }
   };
 
-  const analyze = async () => {
+  const analyze = () => {
     if (!image) {
       setMessage("Prends une photo ou choisis une image dans ta galerie.");
       return;
     }
     setMessage(null);
-    setIsAnalyzing(true);
-    try {
-      const analysis = await analyzeFoodImage(image.base64);
-      saveScan({ imageUri: image.uri, analysis });
-      router.replace("/result");
-    } catch (cause) {
-      setMessage(
-        cause instanceof FoodRecognitionError
-          ? cause.message
-          : "Une erreur est survenue pendant l’analyse. Réessaie.",
-      );
-    } finally {
-      setIsAnalyzing(false);
-    }
+    saveScan({ imageUri: image.uri, imageBase64: image.base64, analysis: null });
+    router.replace("/result");
   };
 
   const closeScanner = () => {
@@ -514,22 +497,15 @@ export default function ScannerScreen() {
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Analyser la photo du plat"
-              disabled={isAnalyzing}
-              onPress={() => void analyze()}
+              onPress={analyze}
               className="mt-4 min-h-[54px] items-center justify-center rounded-[16px] bg-brand-primary disabled:opacity-60"
             >
-              {isAnalyzing ? (
-                <ActivityIndicator color="#FFFFFF" />
-              ) : (
-                <Text className="text-[15px] font-bold text-white">
-                  Analyser le plat
-                </Text>
-              )}
+              <Text className="text-[15px] font-bold text-white">Analyser le plat</Text>
             </Pressable>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel="Reprendre la photo"
-              disabled={isAnalyzing}
+              disabled={false}
               onPress={() => {
                 setImage(null);
                 setCameraReady(false);
