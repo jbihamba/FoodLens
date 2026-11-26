@@ -5,9 +5,15 @@ export interface FoodAnalysis {
   portionSize: string | null;
   ingredients: string[];
   confidence: number | null;
+  macros?: {
+    protein: number | null;
+    carbohydrates: number | null;
+    fat: number | null;
+  } | null;
 }
 
 export interface ScanSession {
   imageUri: string;
-  analysis: FoodAnalysis;
+  imageBase64?: string;
+  analysis: FoodAnalysis | null;
 }

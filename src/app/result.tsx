@@ -1,6 +1,7 @@
 import { router } from "expo-router";
+import * as Haptics from "expo-haptics";
 import Slider from "@react-native-community/slider";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
@@ -21,10 +22,12 @@ import { CalorieProgressBar } from "@/components/food/CalorieProgressBar";
 import { FoodButton } from "@/components/food/FoodButton";
 import { Pressable, Text, TextInput } from "@/components/LocalizedText";
 import { StyledImage } from "@/components/nativewind-interop";
+import { ScanResultSheet } from "@/components/scan/ScanResultSheet";
+import { useScanResult } from "@/hooks/useScanResult";
 import { useAppSettings } from "@/stores/app-settings";
 import { useDailyCalories } from "@/stores/daily-calories";
 import { useScanSession } from "@/stores/scan-session";
-import type { ScanSession } from "@/types/food";
+import type { FoodAnalysis, ScanSession } from "@/types/food";
 
 const MEAL_TYPES = ["Breakfast", "Lunch", "Dinner", "Snack"] as const;
 type MealType = (typeof MEAL_TYPES)[number];
@@ -188,8 +191,32 @@ function NutritionCard({
 
 export default function ResultScreen() {
   const { scan } = useScanSession();
-  return <ResultContent key={scan?.imageUri ?? "empty"} scan={scan} />;
+  const draft = scan?.analysis === null && scan.imageBase64
+    ? { imageUri: scan.imageUri, imageBase64: scan.imageBase64 }
+    : null;
+  const progressive = useScanResult(draft);
+  useEffect(() => {
+    if (draft && progressive.state.status === "done") {
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined);
+    }
+  }, [scan?.imageUri, progressive.state.status]);
+  if (draft && progressive.state.status !== "done") {
+    return <ScanResultSheet state={progressive.state} onRetry={progressive.retry} onCancel={progressive.cancel} />;
+  }
+  const completeScan = scan && progressive.state.analysis
+    ? { ...scan, analysis: progressive.state.analysis }
+    : scan;
+  return <ResultContent key={completeScan?.imageUri ?? "empty"} scan={completeScan} />;
 }
+
+const EMPTY_ANALYSIS: FoodAnalysis = {
+  foodName: "",
+  description: "",
+  estimatedCalories: null,
+  portionSize: null,
+  ingredients: [],
+  confidence: null,
+};
 
 function ResultContent({ scan }: { scan: ScanSession | null }) {
   const { settings } = useAppSettings();
@@ -200,7 +227,8 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
     isLoading: isDiaryLoading,
     error: diaryError,
   } = useDailyCalories();
-  const [foodName, setFoodName] = useState(scan?.analysis.foodName ?? "");
+  const analysis = scan?.analysis ?? EMPTY_ANALYSIS;
+  const [foodName, setFoodName] = useState(analysis.foodName);
   const [mealType, setMealType] = useState<MealType | null>(null);
   const [portionValue, setPortionValue] = useState(1);
   const [isCustomPortion, setIsCustomPortion] = useState(false);
@@ -226,8 +254,8 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
     );
   };
 
-  const baseCalories = scan?.analysis.estimatedCalories ?? null;
-  const basePortionGrams = getPortionGrams(scan?.analysis.portionSize ?? null);
+  const baseCalories = analysis.estimatedCalories;
+  const basePortionGrams = getPortionGrams(analysis.portionSize);
   const customQuantity = Number(customGrams.replace(",", "."));
   const isCustomQuantityValid =
     customGrams.trim().length > 0 &&
@@ -250,7 +278,7 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
     : basePortionGrams !== null
       ? formatGrams(basePortionGrams * (portionMultiplier ?? 1))
       : getPortionLabel(
-          scan?.analysis.portionSize ?? null,
+          analysis.portionSize,
           portionMultiplier ?? 1,
           settings.units,
         );
@@ -433,20 +461,20 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
                 </View>
               </View>
 
-              {scan.analysis.description ||
-              scan.analysis.ingredients.length > 0 ? (
+              {analysis.description ||
+              analysis.ingredients.length > 0 ? (
                 <View className="mt-4 rounded-[21px] border-[0.5px] border-selected-light bg-surface-light p-[17px] dark:border-selected-dark dark:bg-surface-dark">
                   <Text className="text-[10px] font-bold tracking-[1.1px] text-muted-light dark:text-muted-dark">
                     CE QUE L’ON VOIT
                   </Text>
-                  {scan.analysis.description ? (
+                  {analysis.description ? (
                     <Text className="mt-2 text-[13px] leading-[19px] text-ink-light dark:text-ink-dark">
-                      {scan.analysis.description}
+                      {analysis.description}
                     </Text>
                   ) : null}
-                  {scan.analysis.ingredients.length > 0 ? (
+                  {analysis.ingredients.length > 0 ? (
                     <View className="mt-3 flex-row flex-wrap gap-2">
-                      {scan.analysis.ingredients.map((ingredient) => (
+                      {analysis.ingredients.map((ingredient) => (
                         <View
                           key={ingredient}
                           className="rounded-full bg-brand-secondary px-3 py-[7px] dark:bg-selected-dark"
@@ -481,10 +509,10 @@ function ResultContent({ scan }: { scan: ScanSession | null }) {
                   placeholderTextColor="#68736B"
                   className="mt-1 h-[46px] border-b border-brand-border text-[20px] font-bold tracking-[-0.4px] text-ink-light dark:border-selected-dark dark:text-ink-dark"
                 />
-                {scan.analysis.confidence !== null ? (
+                {analysis.confidence !== null ? (
                   <Text className="mt-[9px] text-[11px] text-muted-light dark:text-muted-dark">
                     Correspondance visuelle ·{" "}
-                    {Math.round(scan.analysis.confidence * 100)} %
+                    {Math.round(analysis.confidence * 100)} %
                   </Text>
                 ) : null}
               </View>
