@@ -131,6 +131,18 @@ export default function HomeScreen() {
         <View className="mt-4">
           <ScanButton onPress={() => router.push("/scanner")} />
         </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Ouvrir le centre d'entraînement"
+          onPress={() => router.push("/workouts")}
+          className="mt-3 min-h-14 flex-row items-center justify-between rounded-[18px] bg-brand-primary px-5"
+        >
+          <View>
+            <Text className="text-[12px] font-semibold text-white/80">Nouveau</Text>
+            <Text className="text-[16px] font-extrabold text-white">Centre d’entraînement</Text>
+          </View>
+          <Text className="text-[24px] text-white">→</Text>
+        </Pressable>
         <View className="mt-4 flex-row gap-2">
           <Pressable
             accessibilityRole="button"

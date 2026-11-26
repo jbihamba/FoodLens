@@ -76,6 +76,11 @@ export function OnboardingGate() {
           }}
         />
         <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
+        <Stack.Screen name="workouts" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="workout-plan" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="active-workout" options={{ headerShown: false, gestureEnabled: false }} />
+        <Stack.Screen name="workout-summary" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="workout-history" options={{ animation: "slide_from_right" }} />
       </Stack>
       {state === "complete" &&
       ![
@@ -86,6 +91,11 @@ export function OnboardingGate() {
         "/scanner",
         "/result",
         "/onboarding",
+        "/workouts",
+        "/workout-plan",
+        "/active-workout",
+        "/workout-summary",
+        "/workout-history",
       ].includes(pathname) ? (
         <View pointerEvents="box-none" className="absolute inset-0">
           <View

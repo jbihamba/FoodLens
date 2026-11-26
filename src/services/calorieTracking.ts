@@ -1,5 +1,7 @@
 import type { SQLiteDatabase } from "expo-sqlite";
 
+import { initializeWorkoutDatabase } from "@/services/workouts";
+
 export const DEFAULT_DAILY_GOAL = 2000;
 export const MAX_DAILY_GOAL = 10000;
 
@@ -106,6 +108,8 @@ export async function initializeCalorieDatabase(db: SQLiteDatabase) {
       now,
     );
   }
+
+  await initializeWorkoutDatabase(db);
 }
 
 export async function hasCompletedOnboarding(db: SQLiteDatabase) {

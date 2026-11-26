@@ -1,0 +1,18 @@
+import { router, useLocalSearchParams } from "expo-router";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Alert, ScrollView, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { useSQLiteContext } from "expo-sqlite";
+
+import { Pressable, Text } from "@/components/LocalizedText";
+import { createWorkoutSession, getPlanExercises, getWorkoutPlans } from "@/services/workouts";
+import type { WorkoutPlan, WorkoutPlanExercise } from "@/types/workout";
+
+export default function WorkoutPlanScreen() {
+  const db = useSQLiteContext(); const { categoryId } = useLocalSearchParams<{ categoryId: string }>();
+  const [plans, setPlans] = useState<WorkoutPlan[]>([]); const [selected, setSelected] = useState<WorkoutPlan | null>(null); const [exercises, setExercises] = useState<WorkoutPlanExercise[]>([]);
+  useEffect(() => { if (!categoryId) return; void (async () => { const rows = await getWorkoutPlans(db, Number(categoryId)); setPlans(rows); if (rows[0]) { setSelected(rows[0]); setExercises(await getPlanExercises(db, rows[0].id)); } })(); }, [categoryId, db]);
+  const choose = async (plan: WorkoutPlan) => { setSelected(plan); setExercises(await getPlanExercises(db, plan.id)); };
+  const start = async () => { if (!selected) return; const id = await createWorkoutSession(db, selected.id); router.replace({ pathname: "/active-workout", params: { sessionId: String(id) } }); };
+  return <SafeAreaView edges={["top"]} className="flex-1 bg-canvas-light dark:bg-canvas-dark"><ScrollView contentContainerClassName="px-5 pb-10 pt-4"><Pressable onPress={() => router.back()} className="min-h-11 justify-center"><Text className="font-bold text-brand-primary">← Retour</Text></Pressable><Text className="mt-3 text-[28px] font-extrabold text-ink-light dark:text-ink-dark">Plans disponibles</Text>{!plans.length ? <ActivityIndicator color="#245C45" /> : <><View className="mt-5 gap-2">{plans.map((plan) => <Pressable key={plan.id} onPress={() => void choose(plan)} className={`rounded-[20px] p-4 ${selected?.id === plan.id ? "bg-brand-primary" : "bg-surface-light dark:bg-surface-dark"}`}><View className="flex-row items-center justify-between"><Text className={`text-[17px] font-extrabold ${selected?.id === plan.id ? "text-white" : "text-ink-light dark:text-ink-dark"}`}>{plan.name}</Text><Text className={`text-[11px] font-bold uppercase ${selected?.id === plan.id ? "text-white/80" : "text-muted-light"}`}>{plan.difficulty}</Text></View><Text className={`mt-1 text-[12px] ${selected?.id === plan.id ? "text-white/80" : "text-muted-light"}`}>{plan.description}</Text></Pressable>)}</View>{selected ? <View className="mt-6"><Text className="text-[18px] font-extrabold text-ink-light dark:text-ink-dark">Séquence · {exercises.length} exercices</Text>{exercises.map((exercise, index) => <View key={exercise.plan_exercise_id} className="mt-2 flex-row items-center rounded-[16px] bg-surface-light p-4 dark:bg-surface-dark"><View className="h-8 w-8 items-center justify-center rounded-full bg-brand-secondary"><Text className="font-extrabold text-brand-primary">{index + 1}</Text></View><View className="ml-3 flex-1"><Text className="font-bold text-ink-light dark:text-ink-dark">{exercise.name}</Text><Text className="mt-1 text-[11px] text-muted-light">{exercise.duration_seconds}s · repos {exercise.rest_seconds}s · {exercise.equipment}</Text></View></View>)}<Pressable onPress={() => void start()} className="mt-6 min-h-14 items-center justify-center rounded-full bg-brand-primary"><Text className="font-extrabold text-white">Commencer la séance</Text></Pressable></View> : null}</>}</ScrollView></SafeAreaView>;
+}
