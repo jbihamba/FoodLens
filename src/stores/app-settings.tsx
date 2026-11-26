@@ -19,10 +19,12 @@ import {
   saveLanguagePreference,
   saveMeasurementUnit,
   saveThemePreference,
+  saveUserFocus,
   saveUserProfile,
   type AppSettings,
   type MeasurementUnit,
   type ThemePreference,
+  type UserFocus,
   type UserProfile,
 } from "@/services/appSettings";
 import type { AppLanguage } from "@/i18n";
@@ -36,6 +38,7 @@ interface AppSettingsContextValue {
   setTheme: (theme: ThemePreference) => Promise<void>;
   setLanguage: (language: AppLanguage) => Promise<void>;
   setUnits: (units: MeasurementUnit) => Promise<void>;
+  setFocus: (focus: UserFocus) => Promise<void>;
   setProfile: (profile: UserProfile) => Promise<void>;
   resetProfile: () => void;
 }
@@ -104,6 +107,13 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
     },
     [db],
   );
+  const setFocus = useCallback(
+    async (focus: UserFocus) => {
+      await saveUserFocus(db, focus);
+      setSettings((current) => ({ ...current, focus }));
+    },
+    [db],
+  );
   const setProfile = useCallback(
     async (profile: UserProfile) => {
       await saveUserProfile(db, profile);
@@ -135,6 +145,7 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
       setTheme,
       setLanguage,
       setUnits,
+      setFocus,
       setProfile,
       resetProfile,
     }),
@@ -146,6 +157,7 @@ export function AppSettingsProvider({ children }: PropsWithChildren) {
       setTheme,
       setLanguage,
       setUnits,
+      setFocus,
       setProfile,
       resetProfile,
     ],

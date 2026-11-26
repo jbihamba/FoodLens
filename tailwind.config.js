@@ -12,25 +12,35 @@ module.exports = {
           accent: "#F2A65A",
           border: "#E3E9E1",
         },
+        fitness: {
+          primary: "#D97736",
+          dark: "#F2A65A",
+          softLight: "#FDF0E6",
+          softDark: "#38281C",
+        },
         canvas: {
           light: "#F8FAF5",
-          dark: "#171D19",
+          dark: "#141A16",
         },
         surface: {
           light: "#FFFFFF",
-          dark: "#222B25",
+          dark: "#1F2822",
         },
         selected: {
           light: "#DCEBDD",
-          dark: "#314237",
+          dark: "#2E3D33",
         },
         ink: {
-          light: "#202820",
+          light: "#1C241E",
           dark: "#F4F7F1",
         },
         muted: {
-          light: "#68736B",
-          dark: "#B4C0B7",
+          light: "#626E65",
+          dark: "#A6B3AA",
+        },
+        danger: {
+          light: "#B93E34",
+          dark: "#F4B1A8",
         },
       },
     },

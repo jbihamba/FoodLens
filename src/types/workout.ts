@@ -86,6 +86,18 @@ export interface WorkoutSessionExercise {
   status: ExerciseStatus;
   started_at: string | null;
   completed_at: string | null;
+  description?: string;
+  instructions?: string;
+  equipment?: string | null;
+  image_uri?: string | null;
+  targeted_muscles?: string;
+  media_type?: ExerciseMediaType | null;
+  media_source_uri?: string | null;
+  media_asset_key?: string | null;
+  media_poster_uri?: string | null;
+  media_source?: string | null;
+  media_license?: string | null;
+  media_attribution?: string | null;
 }
 
 export interface WorkoutStats {

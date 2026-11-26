@@ -1,26 +1,42 @@
 import { router, useFocusEffect } from "expo-router";
+import { useSQLiteContext } from "expo-sqlite";
 import { useCallback, useState } from "react";
-import { ActivityIndicator, Modal, ScrollView, View } from "react-native";
+import { ActivityIndicator, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { CalorieRing } from "@/components/food/CalorieRing";
 import { MealCard } from "@/components/food/MealCard";
-import { ScanButton } from "@/components/food/ScanButton";
 import { Pressable, Text } from "@/components/LocalizedText";
-import { TipsCard, TipsEmptyState } from "@/components/TipsCard";
+import { TipsCard } from "@/components/TipsCard";
+import { AppButton } from "@/components/ui/AppButton";
+import { AppCard } from "@/components/ui/AppCard";
+import { Badge } from "@/components/ui/Badge";
+import { EmptyState } from "@/components/ui/EmptyState";
+import {
+  BarcodeIcon,
+  CameraIcon,
+  ChevronRightIcon,
+  FitnessIcon,
+  PlusIcon,
+  ProgressIcon,
+  SettingsIcon,
+} from "@/components/ui/Icons";
+import { theme } from "@/constants/theme";
 import { translateTip } from "@/i18n/tips";
-import { DEFAULT_DAILY_GOAL, type FoodEntry } from "@/services/calorieTracking";
-import { useDailyCalories } from "@/stores/daily-calories";
+import { DEFAULT_DAILY_GOAL } from "@/services/calorieTracking";
+import { getActiveWorkoutSession, getWorkoutStats } from "@/services/workouts";
 import { useAppSettings } from "@/stores/app-settings";
+import { useDailyCalories } from "@/stores/daily-calories";
 import { useTips } from "@/stores/tips";
+import type { WorkoutSession, WorkoutStats } from "@/types/workout";
 
-function MacroValue({ label, value }: { label: string; value: number | null }) {
+function CompactMacro({ label, value }: { label: string; value: number | null }) {
   return (
-    <View className="flex-1 items-center rounded-[16px] bg-canvas-light px-2 py-3 dark:bg-canvas-dark">
-      <Text className="text-[17px] font-bold text-ink-light dark:text-ink-dark">
+    <View className="flex-1 items-center rounded-[14px] bg-canvas-light px-2 py-2.5 dark:bg-canvas-dark">
+      <Text className="text-[15px] font-bold text-ink-light dark:text-ink-dark">
         {value === null ? "—" : `${Math.round(value)} g`}
       </Text>
-      <Text className="mt-1 text-[11px] font-medium text-muted-light dark:text-muted-dark">
+      <Text className="mt-0.5 text-[11px] font-medium text-muted-light dark:text-muted-dark">
         {label}
       </Text>
     </View>
@@ -28,22 +44,32 @@ function MacroValue({ label, value }: { label: string; value: number | null }) {
 }
 
 export default function HomeScreen() {
-  const { goal, entries, isLoading, error, refresh, deleteEntry } =
-    useDailyCalories();
-  const { tips, stats, error: tipsError, refreshTips, dismissTip } = useTips();
-  const { settings } = useAppSettings();
-  const [pendingDelete, setPendingDelete] = useState<FoodEntry | null>(null);
-  const [deleteError, setDeleteError] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const db = useSQLiteContext();
+  const { goal, entries, isLoading, error, refresh } = useDailyCalories();
+  const { tips, dismissTip } = useTips();
+  const { settings, resolvedColorScheme } = useAppSettings();
+  const [activeSession, setActiveSession] = useState<WorkoutSession | null>(
+    null,
+  );
+  const [workoutStats, setWorkoutStats] = useState<WorkoutStats | null>(null);
+
+  const isDark = resolvedColorScheme === "dark";
+  const accentColor = isDark ? theme.colors.accentDark : theme.colors.accent;
+  const fitnessColor = isDark
+    ? theme.colors.fitnessDark
+    : theme.colors.fitness;
+  const inkColor = isDark ? theme.colors.textDark : theme.colors.textLight;
+
+  const targetCalories = goal?.target_calories ?? DEFAULT_DAILY_GOAL;
   const consumed = entries.reduce((sum, entry) => sum + entry.calories, 0);
   const macros = {
-    proteines: entries.some((entry) => entry.protein_g !== null)
+    protein: entries.some((entry) => entry.protein_g !== null)
       ? entries.reduce((sum, entry) => sum + (entry.protein_g ?? 0), 0)
       : null,
-    glucides: entries.some((entry) => entry.carbs_g !== null)
+    carbs: entries.some((entry) => entry.carbs_g !== null)
       ? entries.reduce((sum, entry) => sum + (entry.carbs_g ?? 0), 0)
       : null,
-    lipides: entries.some((entry) => entry.fat_g !== null)
+    fat: entries.some((entry) => entry.fat_g !== null)
       ? entries.reduce((sum, entry) => sum + (entry.fat_g ?? 0), 0)
       : null,
   };
@@ -51,26 +77,71 @@ export default function HomeScreen() {
   useFocusEffect(
     useCallback(() => {
       void refresh().catch(() => undefined);
-    }, [refresh]),
+      void Promise.all([
+        getActiveWorkoutSession(db),
+        getWorkoutStats(db),
+      ])
+        .then(([session, nextStats]) => {
+          setActiveSession(session);
+          setWorkoutStats(nextStats);
+        })
+        .catch(() => undefined);
+    }, [db, refresh]),
   );
 
-  const confirmDelete = async () => {
-    if (!pendingDelete || isDeleting) return;
-    setIsDeleting(true);
-    setDeleteError(null);
-    try {
-      await deleteEntry(pendingDelete.id);
-      setPendingDelete(null);
-    } catch (cause) {
-      setDeleteError(
-        cause instanceof Error
-          ? cause.message
-          : "Impossible de supprimer ce repas.",
-      );
-    } finally {
-      setIsDeleting(false);
-    }
-  };
+  const todayLabel = new Date().toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+  });
+  const firstName = settings.profile.displayName.trim().split(/\s+/)[0];
+  const greeting = firstName ? `Bonjour, ${firstName}` : "Bonjour !";
+  const recentEntries = entries.slice(0, 2);
+
+  const fitnessCard = (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={
+        activeSession
+          ? `Reprendre la séance ${activeSession.plan_name}`
+          : "Découvrir les entraînements"
+      }
+      onPress={() => {
+        if (activeSession) {
+          router.push({
+            pathname: "/active-workout",
+            params: { sessionId: String(activeSession.id) },
+          });
+        } else {
+          router.push("/(tabs)/fitness");
+        }
+      }}
+    >
+      <AppCard variant="fitness" className="flex-row items-center gap-3.5">
+        <View className="h-12 w-12 items-center justify-center rounded-[16px] bg-surface-light dark:bg-surface-dark">
+          <FitnessIcon size={22} color={fitnessColor} />
+        </View>
+        <View className="flex-1">
+          <Text className="text-[11px] font-bold uppercase tracking-[0.8px] text-fitness-primary dark:text-fitness-dark">
+            {activeSession ? "Séance en cours" : "Fitness du jour"}
+          </Text>
+          <Text className="mt-0.5 text-[16px] font-bold text-ink-light dark:text-ink-dark">
+            {activeSession
+              ? `Reprendre · ${activeSession.plan_name}`
+              : "Choisir un entraînement"}
+          </Text>
+          <Text className="mt-0.5 text-[12px] text-muted-light dark:text-muted-dark">
+            {activeSession
+              ? `${activeSession.category_name} · Appuyez pour continuer`
+              : workoutStats && workoutStats.currentWeekSessions > 0
+                ? `${workoutStats.currentWeekSessions} séance(s) cette semaine`
+                : "Séances guidées par zone musculaire"}
+          </Text>
+        </View>
+        <ChevronRightIcon size={20} color={fitnessColor} />
+      </AppCard>
+    </Pressable>
+  );
 
   return (
     <SafeAreaView
@@ -78,207 +149,166 @@ export default function HomeScreen() {
       className="flex-1 bg-canvas-light dark:bg-canvas-dark"
     >
       <ScrollView
-        contentContainerClassName="mx-auto w-full max-w-[560px] px-5 pb-8"
+        contentContainerClassName="mx-auto w-full max-w-[560px] px-5 pb-8 pt-2"
         showsVerticalScrollIndicator={false}
       >
-        <View className="min-h-[60px] flex-row items-center justify-between">
-          <View>
-            <Text className="text-[13px] font-semibold text-muted-light dark:text-muted-dark">
-              FoodLens
+        {/* Header personnalisé */}
+        <View className="min-h-[58px] flex-row items-center justify-between">
+          <View className="flex-1">
+            <Text className="text-[12px] font-semibold capitalize text-muted-light dark:text-muted-dark">
+              {todayLabel}
             </Text>
-            <Text className="text-[22px] font-extrabold text-ink-light dark:text-ink-dark">
-              Bonjour !
+            <Text className="mt-0.5 text-[26px] font-extrabold tracking-[-0.5px] text-ink-light dark:text-ink-dark">
+              {greeting}
             </Text>
           </View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Ouvrir les réglages"
             onPress={() => router.push("/settings")}
-            className="min-h-11 min-w-11 items-center justify-center rounded-full bg-surface-light dark:bg-surface-dark"
+            className="h-11 w-11 items-center justify-center rounded-full border border-brand-border bg-surface-light dark:border-selected-dark dark:bg-surface-dark"
           >
-            <Text className="text-[18px] text-ink-light dark:text-ink-dark">
-              ⚙
-            </Text>
+            <SettingsIcon size={20} color={inkColor} />
           </Pressable>
         </View>
 
-        <View className="mt-4 items-center rounded-[25px] border border-selected-light bg-surface-light px-5 py-5 dark:border-selected-dark dark:bg-surface-dark">
+        {/* Résumé de la journée */}
+        <AppCard variant="elevated" className="mt-4 items-center">
           <View className="mb-3 w-full flex-row items-center justify-between">
             <Text className="text-[15px] font-bold text-ink-light dark:text-ink-dark">
-              Calories du jour
+              Résumé du jour
             </Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Modifier l’objectif calorique"
+              accessibilityLabel="Modifier l'objectif calorique"
               onPress={() => router.push("/goal")}
-              className="min-h-11 min-w-11 items-center justify-center rounded-full"
+              className="min-h-9 justify-center rounded-full bg-brand-secondary px-3 dark:bg-selected-dark"
             >
-              <Text className="text-[13px] font-bold text-brand-primary dark:text-[#A8C8B2]">
-                Objectif · {goal?.target_calories ?? DEFAULT_DAILY_GOAL}
+              <Text className="text-[12px] font-bold text-brand-primary dark:text-[#8CC0A0]">
+                Objectif · {targetCalories.toLocaleString("fr-FR")} kcal
               </Text>
             </Pressable>
           </View>
+
           {isLoading ? (
-            <ActivityIndicator color="#245C45" />
+            <View className="py-12">
+              <ActivityIndicator color="#245C45" />
+            </View>
           ) : (
-            <CalorieRing
-              consumed={consumed}
-              goal={goal?.target_calories ?? DEFAULT_DAILY_GOAL}
-            />
+            <CalorieRing consumed={consumed} goal={targetCalories} size={180} />
           )}
-        </View>
 
+          <View className="mt-4 w-full flex-row gap-2">
+            <CompactMacro label="Protéines" value={macros.protein} />
+            <CompactMacro label="Glucides" value={macros.carbs} />
+            <CompactMacro label="Lipides" value={macros.fat} />
+          </View>
+        </AppCard>
+
+        {/* Action principale : Scanner un repas */}
         <View className="mt-4">
-          <ScanButton onPress={() => router.push("/scanner")} />
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Ouvrir le centre d'entraînement"
-          onPress={() => router.push("/workouts")}
-          className="mt-3 min-h-14 flex-row items-center justify-between rounded-[18px] bg-brand-primary px-5"
-        >
-          <View>
-            <Text className="text-[12px] font-semibold text-white/80">Nouveau</Text>
-            <Text className="text-[16px] font-extrabold text-white">Centre d’entraînement</Text>
-          </View>
-          <Text className="text-[24px] text-white">→</Text>
-        </Pressable>
-        <View className="mt-4 flex-row gap-2">
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Ajouter un repas manuellement"
-            onPress={() => router.push("/entry")}
-            className="min-h-11 flex-1 items-center justify-center rounded-full bg-surface-light px-2 dark:bg-surface-dark"
-          >
-            <Text className="text-center text-[11px] font-semibold text-ink-light dark:text-ink-dark">
-              ＋ Manuel
-            </Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Scanner un code-barres"
-            onPress={() =>
-              router.push({ pathname: "/scanner", params: { mode: "barcode" } })
-            }
-            className="min-h-11 flex-1 items-center justify-center rounded-full bg-surface-light px-2 dark:bg-surface-dark"
-          >
-            <Text className="text-center text-[11px] font-semibold text-ink-light dark:text-ink-dark">
-              Code-barres
-            </Text>
-          </Pressable>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Ouvrir le calendrier alimentaire"
-            onPress={() => router.push("/calendar")}
-            className="min-h-11 flex-1 items-center justify-center rounded-full bg-surface-light px-2 dark:bg-surface-dark"
-          >
-            <Text className="text-center text-[11px] font-semibold text-ink-light dark:text-ink-dark">
-              Calendrier
-            </Text>
-          </Pressable>
-        </View>
+          <AppButton
+            label="Scanner un repas"
+            variant="primary"
+            icon={<CameraIcon size={20} color="#FFFFFF" />}
+            onPress={() => router.push("/scanner")}
+            accessibilityHint="Ouvre la caméra pour analyser un aliment"
+          />
 
-        <View className="mt-6">
-          <Text className="mb-3 text-[17px] font-bold text-ink-light dark:text-ink-dark">
-            Macros du jour
-          </Text>
-          <View className="flex-row gap-2">
-            <MacroValue label="Protéines" value={macros.proteines} />
-            <MacroValue label="Glucides" value={macros.glucides} />
-            <MacroValue label="Lipides" value={macros.lipides} />
-          </View>
-          {macros.proteines === null &&
-          macros.glucides === null &&
-          macros.lipides === null ? (
-            <Text className="mt-2 text-[11px] text-muted-light dark:text-muted-dark">
-              Les macros s’affichent lorsqu’elles sont disponibles pour un
-              repas.
-            </Text>
-          ) : null}
-        </View>
-
-        <View className="mt-6">
-          <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-[17px] font-bold text-ink-light dark:text-ink-dark">
-              {translateTip("tips.ui.day", settings.language)}
-            </Text>
+          <View className="mt-2.5 flex-row gap-2">
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={translateTip(
-                "tips.ui.seeAll",
-                settings.language,
-              )}
-              onPress={() => router.push("/stats")}
-              className="min-h-11 justify-center px-2"
+              accessibilityLabel="Scanner un code-barres"
+              onPress={() =>
+                router.push({ pathname: "/scanner", params: { mode: "barcode" } })
+              }
+              className="min-h-11 flex-1 flex-row items-center justify-center gap-2 rounded-[14px] border border-brand-border bg-surface-light px-3 dark:border-selected-dark dark:bg-surface-dark"
             >
-              <Text className="text-[12px] font-bold text-brand-primary dark:text-[#A8C8B2]">
-                {translateTip("tips.ui.seeAll", settings.language)}
+              <BarcodeIcon size={17} color={accentColor} />
+              <Text className="text-[13px] font-semibold text-ink-light dark:text-ink-dark">
+                Code-barres
+              </Text>
+            </Pressable>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Ajouter un repas manuellement"
+              onPress={() => router.push("/entry")}
+              className="min-h-11 flex-1 flex-row items-center justify-center gap-2 rounded-[14px] border border-brand-border bg-surface-light px-3 dark:border-selected-dark dark:bg-surface-dark"
+            >
+              <PlusIcon size={17} color={accentColor} />
+              <Text className="text-[13px] font-semibold text-ink-light dark:text-ink-dark">
+                Ajout manuel
               </Text>
             </Pressable>
           </View>
-          {tipsError ? (
-            <View>
-              <Text
-                accessibilityRole="alert"
-                className="mb-2 text-[12px] text-[#A53F35]"
-              >
-                {translateTip("tips.ui.error", settings.language)}
+        </View>
+
+        {/* Bloc Fitness du jour (priorisé si focus fitness ou séance active) */}
+        <View className="mt-5">{fitnessCard}</View>
+
+        {/* Aperçu progression / conseil contextuel */}
+        {tips.length > 0 ? (
+          <View className="mt-5">
+            <View className="mb-2 flex-row items-center justify-between">
+              <Text className="text-[15px] font-bold text-ink-light dark:text-ink-dark">
+                {translateTip("tips.ui.day", settings.language)}
               </Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={translateTip(
-                  "tips.ui.retry",
-                  settings.language,
-                )}
-                onPress={() => void refreshTips().catch(() => undefined)}
-                className="min-h-11 justify-center"
+                onPress={() => router.push("/(tabs)/stats")}
+                className="min-h-9 flex-row items-center gap-1 px-1"
               >
-                <Text className="text-[12px] font-bold text-brand-primary dark:text-[#A8C8B2]">
-                  {translateTip("tips.ui.retry", settings.language)}
+                <ProgressIcon size={14} color={accentColor} />
+                <Text className="text-[12px] font-bold text-brand-primary dark:text-[#8CC0A0]">
+                  Progression
                 </Text>
               </Pressable>
             </View>
-          ) : tips.length ? (
             <TipsCard
               tip={tips[0]}
               onDismiss={(ruleId) =>
                 void dismissTip(ruleId).catch(() => undefined)
               }
             />
-          ) : (
-            <TipsEmptyState
-              message={translateTip(
-                stats && stats.current.trackedDays < 3
-                  ? "tips.ui.insufficient"
-                  : "tips.ui.empty",
-                settings.language,
-              )}
-            />
-          )}
-        </View>
-
-        <View className="mt-6">
-          <View className="mb-3 flex-row items-center justify-between">
-            <Text className="text-[17px] font-bold text-ink-light dark:text-ink-dark">
-              Repas d’aujourd’hui
-            </Text>
-            <Text className="text-[12px] font-semibold text-muted-light dark:text-muted-dark">
-              {entries.length}
-            </Text>
           </View>
+        ) : null}
+
+        {/* Aperçu des derniers repas (sans dupliquer tout le journal) */}
+        <View className="mt-5">
+          <View className="mb-2.5 flex-row items-center justify-between">
+            <View className="flex-row items-center gap-2">
+              <Text className="text-[16px] font-bold text-ink-light dark:text-ink-dark">
+                Repas récents
+              </Text>
+              {entries.length > 0 ? (
+                <Badge label={`${entries.length}`} tone="nutrition" />
+              ) : null}
+            </View>
+            {entries.length > 0 ? (
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => router.push("/(tabs)/journal")}
+                className="min-h-9 justify-center px-1"
+              >
+                <Text className="text-[12px] font-bold text-brand-primary dark:text-[#8CC0A0]">
+                  Tout voir ›
+                </Text>
+              </Pressable>
+            ) : null}
+          </View>
+
           {error ? (
             <Text
               accessibilityRole="alert"
-              className="mb-3 text-[12px] text-[#A53F35]"
+              className="mb-2 text-[12px] text-danger-light dark:text-danger-dark"
             >
               {error}
             </Text>
           ) : null}
-          {isLoading ? (
-            <ActivityIndicator color="#245C45" />
-          ) : entries.length ? (
+
+          {recentEntries.length > 0 ? (
             <View className="gap-2">
-              {entries.map((entry) => (
+              {recentEntries.map((entry) => (
                 <MealCard
                   key={entry.id}
                   entry={entry}
@@ -288,75 +318,20 @@ export default function HomeScreen() {
                       params: { id: String(entry.id) },
                     })
                   }
-                  onDelete={() => setPendingDelete(entry)}
                 />
               ))}
             </View>
           ) : (
-            <View className="items-center rounded-[22px] border border-dashed border-brand-border bg-surface-light px-5 py-6 dark:border-selected-dark dark:bg-surface-dark">
-              <View className="h-14 w-14 items-center justify-center rounded-full bg-brand-secondary dark:bg-selected-dark">
-                <Text className="text-[26px] text-brand-primary dark:text-[#A8C8B2]">
-                  ⌕
-                </Text>
-              </View>
-              <Text className="mt-3 text-[16px] font-bold text-ink-light dark:text-ink-dark">
-                Scanne ton premier repas
-              </Text>
-              <Text className="mt-1 text-center text-[12px] text-muted-light dark:text-muted-dark">
-                Une photo suffit pour commencer ton journal.
-              </Text>
-            </View>
+            <EmptyState
+              icon={<CameraIcon size={24} color={accentColor} />}
+              title="Aucun repas enregistré"
+              description="Prends une photo de ton plat pour obtenir ses calories et nutriments en quelques secondes."
+              actionLabel="Scanner mon premier repas"
+              onAction={() => router.push("/scanner")}
+            />
           )}
         </View>
       </ScrollView>
-
-      <Modal
-        transparent
-        animationType="fade"
-        visible={pendingDelete !== null}
-        onRequestClose={() => {
-          if (!isDeleting) setPendingDelete(null);
-        }}
-      >
-        <View className="flex-1 items-center justify-center bg-black/45 px-6">
-          <View className="w-full max-w-[390px] rounded-[24px] bg-surface-light p-5 dark:bg-surface-dark">
-            <Text className="text-[19px] font-bold text-ink-light dark:text-ink-dark">
-              Supprimer ce repas ?
-            </Text>
-            <Text className="mt-2 text-[13px] leading-5 text-muted-light dark:text-muted-dark">
-              {pendingDelete?.food_name}
-            </Text>
-            {deleteError ? (
-              <Text
-                accessibilityRole="alert"
-                className="mt-3 text-xs text-[#A53F35]"
-              >
-                {deleteError}
-              </Text>
-            ) : null}
-            <View className="mt-5 flex-row gap-3">
-              <Pressable
-                accessibilityRole="button"
-                disabled={isDeleting}
-                onPress={() => setPendingDelete(null)}
-                className="min-h-11 flex-1 items-center justify-center rounded-[15px] bg-canvas-light dark:bg-canvas-dark"
-              >
-                <Text className="font-bold text-ink-light dark:text-ink-dark">
-                  Annuler
-                </Text>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
-                disabled={isDeleting}
-                onPress={() => void confirmDelete()}
-                className="min-h-11 flex-1 items-center justify-center rounded-[15px] bg-[#A53F35]"
-              >
-                <Text className="font-bold text-white">Supprimer</Text>
-              </Pressable>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }

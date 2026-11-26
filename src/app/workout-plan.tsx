@@ -1,18 +1,245 @@
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, ScrollView, View } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { useSQLiteContext } from "expo-sqlite";
+import { useEffect, useState } from "react";
+import { ActivityIndicator, ScrollView, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Pressable, Text } from "@/components/LocalizedText";
-import { createWorkoutSession, getPlanExercises, getWorkoutPlans } from "@/services/workouts";
+import { AppButton } from "@/components/ui/AppButton";
+import { AppCard } from "@/components/ui/AppCard";
+import { Badge } from "@/components/ui/Badge";
+import {
+  ChevronRightIcon,
+  ClockIcon,
+  PlayIcon,
+} from "@/components/ui/Icons";
+import { ScreenHeader } from "@/components/ui/ScreenHeader";
+import { theme } from "@/constants/theme";
+import {
+  DIFFICULTY_LABELS,
+  formatDurationMinutes,
+  localizeCategory,
+  localizeExercise,
+  localizePlan,
+} from "@/constants/workoutLabels";
+import {
+  createWorkoutSession,
+  getPlanExercises,
+  getWorkoutPlans,
+} from "@/services/workouts";
+import { useAppSettings } from "@/stores/app-settings";
 import type { WorkoutPlan, WorkoutPlanExercise } from "@/types/workout";
 
 export default function WorkoutPlanScreen() {
-  const db = useSQLiteContext(); const { categoryId } = useLocalSearchParams<{ categoryId: string }>();
-  const [plans, setPlans] = useState<WorkoutPlan[]>([]); const [selected, setSelected] = useState<WorkoutPlan | null>(null); const [exercises, setExercises] = useState<WorkoutPlanExercise[]>([]);
-  useEffect(() => { if (!categoryId) return; void (async () => { const rows = await getWorkoutPlans(db, Number(categoryId)); setPlans(rows); if (rows[0]) { setSelected(rows[0]); setExercises(await getPlanExercises(db, rows[0].id)); } })(); }, [categoryId, db]);
-  const choose = async (plan: WorkoutPlan) => { setSelected(plan); setExercises(await getPlanExercises(db, plan.id)); };
-  const start = async () => { if (!selected) return; const id = await createWorkoutSession(db, selected.id); router.replace({ pathname: "/active-workout", params: { sessionId: String(id) } }); };
-  return <SafeAreaView edges={["top"]} className="flex-1 bg-canvas-light dark:bg-canvas-dark"><ScrollView contentContainerClassName="px-5 pb-10 pt-4"><Pressable onPress={() => router.back()} className="min-h-11 justify-center"><Text className="font-bold text-brand-primary">← Retour</Text></Pressable><Text className="mt-3 text-[28px] font-extrabold text-ink-light dark:text-ink-dark">Plans disponibles</Text>{!plans.length ? <ActivityIndicator color="#245C45" /> : <><View className="mt-5 gap-2">{plans.map((plan) => <Pressable key={plan.id} onPress={() => void choose(plan)} className={`rounded-[20px] p-4 ${selected?.id === plan.id ? "bg-brand-primary" : "bg-surface-light dark:bg-surface-dark"}`}><View className="flex-row items-center justify-between"><Text className={`text-[17px] font-extrabold ${selected?.id === plan.id ? "text-white" : "text-ink-light dark:text-ink-dark"}`}>{plan.name}</Text><Text className={`text-[11px] font-bold uppercase ${selected?.id === plan.id ? "text-white/80" : "text-muted-light"}`}>{plan.difficulty}</Text></View><Text className={`mt-1 text-[12px] ${selected?.id === plan.id ? "text-white/80" : "text-muted-light"}`}>{plan.description}</Text></Pressable>)}</View>{selected ? <View className="mt-6"><Text className="text-[18px] font-extrabold text-ink-light dark:text-ink-dark">Séquence · {exercises.length} exercices</Text>{exercises.map((exercise, index) => <Pressable key={exercise.plan_exercise_id} onPress={() => router.push({ pathname: "/exercise-details", params: { planExerciseId: String(exercise.plan_exercise_id) } })} className="mt-2 flex-row items-center rounded-[16px] bg-surface-light p-4 dark:bg-surface-dark"><View className="h-8 w-8 items-center justify-center rounded-full bg-brand-secondary"><Text className="font-extrabold text-brand-primary">{index + 1}</Text></View><View className="ml-3 flex-1"><Text className="font-bold text-ink-light dark:text-ink-dark">{exercise.name}</Text><Text className="mt-1 text-[11px] text-muted-light">{exercise.duration_seconds}s · repos {exercise.rest_seconds}s · {exercise.equipment}</Text></View><Text className="text-[22px] text-brand-primary">›</Text></Pressable>)}<Pressable onPress={() => void start()} className="mt-6 min-h-14 items-center justify-center rounded-full bg-brand-primary"><Text className="font-extrabold text-white">Commencer la séance</Text></Pressable></View> : null}</>}</ScrollView></SafeAreaView>;
+  const db = useSQLiteContext();
+  const { categoryId, categorySlug } = useLocalSearchParams<{
+    categoryId: string;
+    categorySlug?: string;
+  }>();
+  const { resolvedColorScheme } = useAppSettings();
+  const [plans, setPlans] = useState<WorkoutPlan[]>([]);
+  const [selected, setSelected] = useState<WorkoutPlan | null>(null);
+  const [exercises, setExercises] = useState<WorkoutPlanExercise[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isStarting, setIsStarting] = useState(false);
+
+  const isDark = resolvedColorScheme === "dark";
+  const fitnessColor = isDark
+    ? theme.colors.fitnessDark
+    : theme.colors.fitness;
+
+  useEffect(() => {
+    if (!categoryId) return;
+    let active = true;
+    void (async () => {
+      try {
+        const rows = await getWorkoutPlans(db, Number(categoryId));
+        if (!active) return;
+        setPlans(rows);
+        if (rows[0]) {
+          setSelected(rows[0]);
+          const planExercises = await getPlanExercises(db, rows[0].id);
+          if (active) setExercises(planExercises);
+        }
+      } finally {
+        if (active) setIsLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [categoryId, db]);
+
+  const choose = async (plan: WorkoutPlan) => {
+    setSelected(plan);
+    setExercises(await getPlanExercises(db, plan.id));
+  };
+
+  const start = async () => {
+    if (!selected || isStarting) return;
+    setIsStarting(true);
+    try {
+      const id = await createWorkoutSession(db, selected.id);
+      router.replace({
+        pathname: "/active-workout",
+        params: { sessionId: String(id) },
+      });
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  const categoryTitle = selected
+    ? localizeCategory(categorySlug ?? "", selected.category_name, "").name
+    : "Programmes";
+
+  return (
+    <SafeAreaView
+      edges={["top"]}
+      className="flex-1 bg-canvas-light dark:bg-canvas-dark"
+    >
+      <ScrollView
+        contentContainerClassName="mx-auto w-full max-w-[560px] px-5 pb-10 pt-2"
+        showsVerticalScrollIndicator={false}
+      >
+        <ScreenHeader
+          showBack
+          eyebrow="Programme"
+          title={categoryTitle}
+          subtitle="Sélectionne une séance et consulte les exercices"
+        />
+
+        {isLoading ? (
+          <View className="py-12">
+            <ActivityIndicator color="#D97736" />
+          </View>
+        ) : (
+          <>
+            {/* Liste des programmes */}
+            <View className="mt-5 gap-3">
+              {plans.map((plan) => {
+                const isSelected = selected?.id === plan.id;
+                const localized = localizePlan(plan.name, plan.description);
+                return (
+                  <Pressable
+                    key={plan.id}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: isSelected }}
+                    onPress={() => void choose(plan)}
+                    className={`rounded-[22px] border p-4 ${
+                      isSelected
+                        ? "border-fitness-primary bg-fitness-softLight dark:border-fitness-dark dark:bg-fitness-softDark"
+                        : "border-brand-border bg-surface-light dark:border-selected-dark dark:bg-surface-dark"
+                    }`}
+                  >
+                    <View className="flex-row items-start justify-between gap-2">
+                      <View className="flex-1">
+                        <Text className="text-[17px] font-extrabold text-ink-light dark:text-ink-dark">
+                          {localized.name}
+                        </Text>
+                        <Text className="mt-1 text-[13px] leading-5 text-muted-light dark:text-muted-dark">
+                          {localized.description}
+                        </Text>
+                      </View>
+                      <Badge
+                        label={DIFFICULTY_LABELS[plan.difficulty]}
+                        tone={isSelected ? "fitness" : "neutral"}
+                      />
+                    </View>
+
+                    <View className="mt-3 flex-row items-center gap-4 border-t border-brand-border/60 pt-3 dark:border-selected-dark">
+                      <View className="flex-row items-center gap-1.5">
+                        <ClockIcon size={14} color={fitnessColor} />
+                        <Text className="text-[12px] font-bold text-ink-light dark:text-ink-dark">
+                          {formatDurationMinutes(plan.duration_seconds)}
+                        </Text>
+                      </View>
+                      <Text className="text-[12px] font-semibold text-muted-light dark:text-muted-dark">
+                        {plan.exercise_count} exercice
+                        {plan.exercise_count > 1 ? "s" : ""}
+                      </Text>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            {/* Détail du workout sélectionné */}
+            {selected ? (
+              <View className="mt-6">
+                <View className="mb-3 flex-row items-center justify-between">
+                  <Text className="text-[17px] font-bold text-ink-light dark:text-ink-dark">
+                    Exercices ({exercises.length})
+                  </Text>
+                  <Text className="text-[12px] text-muted-light dark:text-muted-dark">
+                    Appuie pour voir la démo
+                  </Text>
+                </View>
+
+                <View className="gap-2.5">
+                  {exercises.map((exercise, index) => {
+                    const localized = localizeExercise(
+                      exercise.name,
+                      exercise.description,
+                      exercise.targeted_muscles,
+                      exercise.equipment,
+                    );
+                    return (
+                      <Pressable
+                        key={exercise.plan_exercise_id}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Voir ${localized.name}`}
+                        onPress={() =>
+                          router.push({
+                            pathname: "/exercise-details",
+                            params: {
+                              planExerciseId: String(exercise.plan_exercise_id),
+                            },
+                          })
+                        }
+                      >
+                        <AppCard className="flex-row items-center gap-3">
+                          <View className="h-9 w-9 items-center justify-center rounded-full bg-fitness-softLight dark:bg-fitness-softDark">
+                            <Text className="text-[13px] font-extrabold text-fitness-primary dark:text-fitness-dark">
+                              {index + 1}
+                            </Text>
+                          </View>
+                          <View className="flex-1">
+                            <Text className="text-[15px] font-bold text-ink-light dark:text-ink-dark">
+                              {localized.name}
+                            </Text>
+                            <Text
+                              numberOfLines={1}
+                              className="mt-0.5 text-[12px] text-muted-light dark:text-muted-dark"
+                            >
+                              {exercise.repetitions
+                                ? `${exercise.repetitions} répétitions`
+                                : `${exercise.duration_seconds}s`}{" "}
+                              · {exercise.rest_seconds}s repos ·{" "}
+                              {localized.muscles}
+                            </Text>
+                          </View>
+                          <ChevronRightIcon size={18} color={fitnessColor} />
+                        </AppCard>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+
+                <View className="mt-6">
+                  <AppButton
+                    label="Commencer la séance"
+                    variant="fitness"
+                    loading={isStarting}
+                    icon={<PlayIcon size={18} color="#FFFFFF" />}
+                    onPress={() => void start()}
+                  />
+                </View>
+              </View>
+            ) : null}
+          </>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
 }

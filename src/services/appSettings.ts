@@ -5,6 +5,7 @@ import type { AppLanguage } from "@/i18n";
 
 export type ThemePreference = "system" | "light" | "dark";
 export type MeasurementUnit = "metric" | "imperial";
+export type UserFocus = "balanced" | "nutrition" | "fitness";
 
 export interface UserProfile {
   displayName: string;
@@ -15,13 +16,15 @@ export interface AppSettings {
   theme: ThemePreference;
   language: AppLanguage;
   units: MeasurementUnit;
+  focus: UserFocus;
   profile: UserProfile;
 }
 
 export const DEFAULT_APP_SETTINGS: AppSettings = {
   theme: "system",
-  language: "en",
+  language: "fr",
   units: "metric",
+  focus: "balanced",
   profile: { displayName: "", profileInfo: "" },
 };
 
@@ -29,6 +32,7 @@ const SETTING_KEYS = {
   theme: "theme_mode",
   language: "language",
   units: "measurement_unit",
+  focus: "user_focus",
   profile: "profile",
 } as const;
 
@@ -46,12 +50,17 @@ function isMeasurementUnit(
   return value === "metric" || value === "imperial";
 }
 
+function isUserFocus(value: string | undefined): value is UserFocus {
+  return value === "balanced" || value === "nutrition" || value === "fitness";
+}
+
 export async function getAppSettings(db: SQLiteDatabase): Promise<AppSettings> {
   const rows = await db.getAllAsync<{ key: string; value: string }>(
-    "SELECT key, value FROM app_preferences WHERE key IN (?, ?, ?, ?)",
+    "SELECT key, value FROM app_preferences WHERE key IN (?, ?, ?, ?, ?)",
     SETTING_KEYS.theme,
     SETTING_KEYS.language,
     SETTING_KEYS.units,
+    SETTING_KEYS.focus,
     SETTING_KEYS.profile,
   );
   const stored = new Map(rows.map(({ key, value }) => [key, value]));
@@ -85,11 +94,13 @@ export async function getAppSettings(db: SQLiteDatabase): Promise<AppSettings> {
   const theme = stored.get(SETTING_KEYS.theme);
   const language = stored.get(SETTING_KEYS.language);
   const units = stored.get(SETTING_KEYS.units);
+  const focus = stored.get(SETTING_KEYS.focus);
 
   return {
     theme: isTheme(theme) ? theme : DEFAULT_APP_SETTINGS.theme,
     language: isLanguage(language) ? language : DEFAULT_APP_SETTINGS.language,
     units: isMeasurementUnit(units) ? units : DEFAULT_APP_SETTINGS.units,
+    focus: isUserFocus(focus) ? focus : DEFAULT_APP_SETTINGS.focus,
     profile,
   };
 }
@@ -113,6 +124,13 @@ export async function saveMeasurementUnit(
   units: MeasurementUnit,
 ) {
   await savePreference(db, SETTING_KEYS.units, units);
+}
+
+export async function saveUserFocus(
+  db: SQLiteDatabase,
+  focus: UserFocus,
+) {
+  await savePreference(db, SETTING_KEYS.focus, focus);
 }
 
 export async function saveUserProfile(

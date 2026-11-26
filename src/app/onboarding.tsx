@@ -1,39 +1,65 @@
 import { router } from "expo-router";
+import { useSQLiteContext } from "expo-sqlite";
 import { useEffect, useRef, useState } from "react";
 import {
   ScrollView,
   useWindowDimensions,
   View,
   type NativeScrollEvent,
-  type ScrollViewInstance,
   type NativeSyntheticEvent,
+  type ScrollViewInstance,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useSQLiteContext } from "expo-sqlite";
 
 import { BrandMark } from "@/components/food/BrandMark";
 import { Pressable, Text } from "@/components/LocalizedText";
 import { StyledImage } from "@/components/nativewind-interop";
+import { AppButton } from "@/components/ui/AppButton";
+import { FitnessIcon, NutritionIcon, ProgressIcon } from "@/components/ui/Icons";
+import type { UserFocus } from "@/services/appSettings";
 import { completeOnboarding } from "@/services/calorieTracking";
+import { useAppSettings } from "@/stores/app-settings";
 
 const slides = [
   {
-    eyebrow: "A FRESH LOOK AT EVERY MEAL",
-    title: "Welcome to\nFoodLens.",
+    eyebrow: "NUTRITION SIMPLIFIÉE",
+    title: "Scanne tes repas\nen un geste.",
     description:
-      "Snap a photo of your meal and let FoodLens help you understand what’s on your plate.",
+      "Prends une photo de ton assiette pour estimer les calories et comprendre ce que tu manges.",
   },
   {
-    eyebrow: "KNOW WHAT’S ON YOUR PLATE",
-    title: "Discover your\nnutrition.",
+    eyebrow: "FITNESS GUIDÉ",
+    title: "Bouge à ton\npropre rythme.",
     description:
-      "Recognize foods and get a helpful calorie estimate, alongside the nutrients that make up your meal.",
+      "Choisis une zone musculaire et suis des séances courtes avec démonstrations et chronomètre.",
   },
   {
-    eyebrow: "BUILD HABITS THAT FEEL GOOD",
-    title: "Track your\nprogress.",
+    eyebrow: "TON EXPÉRIENCE",
+    title: "Par quoi veux-tu\ncommencer ?",
     description:
-      "Set a daily calorie goal, revisit your food history, and get to know your eating habits over time.",
+      "FoodLens s'adapte à tes envies. Tu pourras changer ce choix à tout moment dans ton profil.",
+  },
+];
+
+const focusChoices: {
+  value: UserFocus;
+  title: string;
+  subtitle: string;
+}[] = [
+  {
+    value: "nutrition",
+    title: "Nutrition d'abord",
+    subtitle: "Scanner mes repas et suivre mes calories",
+  },
+  {
+    value: "balanced",
+    title: "Nutrition & Fitness",
+    subtitle: "L'expérience complète, pas à pas",
+  },
+  {
+    value: "fitness",
+    title: "Fitness d'abord",
+    subtitle: "Découvrir les entraînements guidés",
   },
 ];
 
@@ -49,21 +75,16 @@ function WelcomeArtwork({ height }: { height: number }) {
         className="h-full w-full"
       />
       <View className="absolute inset-0 bg-[#17241D33]" />
-      <View className="absolute left-4 top-4 rounded-full bg-white/95 px-3 py-2">
-        <Text className="text-[11px] font-bold text-brand-primary">
-          A closer look at your plate
-        </Text>
-      </View>
-      <View className="absolute bottom-4 right-4 flex-row items-center gap-2 rounded-[16px] bg-white px-3 py-[10px]">
-        <View className="h-8 w-8 items-center justify-center rounded-full bg-selected-light">
-          <Text className="text-base">✦</Text>
+      <View className="absolute bottom-4 left-4 right-4 flex-row items-center gap-3 rounded-[18px] bg-white/95 px-4 py-3">
+        <View className="h-10 w-10 items-center justify-center rounded-full bg-brand-secondary">
+          <NutritionIcon size={20} color="#245C45" />
         </View>
-        <View>
-          <Text className="text-[10px] font-semibold text-muted-light">
+        <View className="flex-1">
+          <Text className="text-[10px] font-bold tracking-[0.8px] text-brand-primary">
             FOODLENS SCAN
           </Text>
-          <Text className="mt-[2px] text-xs font-bold text-ink-light">
-            Your meal, in focus
+          <Text className="mt-0.5 text-[13px] font-bold text-ink-light">
+            Calories & nutriments en quelques secondes
           </Text>
         </View>
       </View>
@@ -71,162 +92,150 @@ function WelcomeArtwork({ height }: { height: number }) {
   );
 }
 
-function NutritionArtwork({ height }: { height: number }) {
-  const nutrients = [
-    { label: "Protein", amount: "28g", color: "bg-[#245C45]" },
-    { label: "Carbs", amount: "42g", color: "bg-[#F2A65A]" },
-    { label: "Fat", amount: "16g", color: "bg-[#92B88A]" },
-  ];
-
+function FitnessArtwork({ height }: { height: number }) {
   return (
     <View
-      className="w-full justify-center rounded-[28px] bg-[#E8F0E7] p-4 dark:bg-[#26372D]"
+      className="w-full justify-center rounded-[28px] bg-fitness-softLight p-5 dark:bg-fitness-softDark"
       style={{ height }}
     >
-      <View className="rounded-[22px] bg-white p-4 dark:bg-surface-dark">
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="text-[10px] font-bold tracking-[1px] text-muted-light dark:text-muted-dark">
-              MEAL ESTIMATE
-            </Text>
-            <Text className="mt-1 text-[19px] font-bold text-ink-light dark:text-ink-dark">
-              Grilled salmon
-            </Text>
+      <View className="rounded-[22px] bg-surface-light p-5 dark:bg-surface-dark">
+        <View className="flex-row items-center gap-3">
+          <View className="h-12 w-12 items-center justify-center rounded-[16px] bg-fitness-softLight dark:bg-fitness-softDark">
+            <FitnessIcon size={24} color="#D97736" />
           </View>
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-selected-light dark:bg-selected-dark">
-            <Text className="text-lg">🥗</Text>
+          <View className="flex-1">
+            <Text className="text-[11px] font-bold tracking-[0.8px] text-fitness-primary dark:text-fitness-dark">
+              SÉANCE GUIDÉE
+            </Text>
+            <Text className="mt-0.5 text-[18px] font-extrabold text-ink-light dark:text-ink-dark">
+              Corps entier express
+            </Text>
           </View>
         </View>
-        <View className="my-3 h-px bg-brand-border dark:bg-selected-dark" />
-        <View className="flex-row items-end justify-between">
-          <View>
-            <Text className="text-[10px] font-bold tracking-[0.8px] text-muted-light dark:text-muted-dark">
-              CALORIES
+        <View className="mt-4 flex-row gap-2">
+          <View className="flex-1 rounded-[12px] bg-canvas-light px-3 py-2 dark:bg-canvas-dark">
+            <Text className="text-[13px] font-bold text-ink-light dark:text-ink-dark">
+              5 min
             </Text>
-            <Text className="mt-1 text-[27px] font-bold leading-8 text-brand-primary dark:text-[#A8C8B2]">
-              520{" "}
-              <Text className="text-xs font-semibold text-muted-light dark:text-muted-dark">
-                kcal
-              </Text>
+            <Text className="text-[11px] text-muted-light dark:text-muted-dark">
+              Durée
             </Text>
           </View>
-          {nutrients.map((nutrient) => (
-            <View key={nutrient.label} className="items-center">
-              <View
-                className={`mb-2 h-[5px] w-8 rounded-full ${nutrient.color}`}
-              />
-              <Text className="text-[11px] font-bold text-ink-light dark:text-ink-dark">
-                {nutrient.amount}
+          <View className="flex-1 rounded-[12px] bg-canvas-light px-3 py-2 dark:bg-canvas-dark">
+            <Text className="text-[13px] font-bold text-ink-light dark:text-ink-dark">
+              Sans matériel
+            </Text>
+            <Text className="text-[11px] text-muted-light dark:text-muted-dark">
+              Équipement
+            </Text>
+          </View>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+function FocusSelector({
+  selectedFocus,
+  onSelect,
+}: {
+  selectedFocus: UserFocus;
+  onSelect: (focus: UserFocus) => void;
+}) {
+  return (
+    <View className="gap-2.5">
+      {focusChoices.map((choice) => {
+        const isSelected = selectedFocus === choice.value;
+        return (
+          <Pressable
+            key={choice.value}
+            accessibilityRole="button"
+            accessibilityState={{ selected: isSelected }}
+            onPress={() => onSelect(choice.value)}
+            className={`flex-row items-center gap-3.5 rounded-[20px] border p-4 ${
+              isSelected
+                ? "border-brand-primary bg-brand-secondary/50 dark:border-[#8CC0A0] dark:bg-selected-dark"
+                : "border-brand-border bg-surface-light dark:border-selected-dark dark:bg-surface-dark"
+            }`}
+          >
+            <View
+              className={`h-11 w-11 items-center justify-center rounded-[14px] ${
+                choice.value === "fitness"
+                  ? "bg-fitness-softLight dark:bg-fitness-softDark"
+                  : "bg-brand-secondary dark:bg-selected-dark"
+              }`}
+            >
+              {choice.value === "nutrition" ? (
+                <NutritionIcon size={20} color="#245C45" />
+              ) : choice.value === "fitness" ? (
+                <FitnessIcon size={20} color="#D97736" />
+              ) : (
+                <ProgressIcon size={20} color="#245C45" />
+              )}
+            </View>
+            <View className="flex-1">
+              <Text className="text-[15px] font-bold text-ink-light dark:text-ink-dark">
+                {choice.title}
               </Text>
-              <Text className="mt-[2px] text-[9px] text-muted-light dark:text-muted-dark">
-                {nutrient.label}
+              <Text className="mt-0.5 text-[12px] text-muted-light dark:text-muted-dark">
+                {choice.subtitle}
               </Text>
             </View>
-          ))}
-        </View>
-      </View>
-      <View className="absolute -bottom-2 -right-2 h-16 w-16 rounded-full border-[10px] border-[#FFFFFF55]" />
-    </View>
-  );
-}
-
-function ProgressArtwork({ height }: { height: number }) {
-  return (
-    <View
-      className="w-full justify-center rounded-[28px] bg-[#E8F0E7] p-4 dark:bg-[#26372D]"
-      style={{ height }}
-    >
-      <View className="rounded-[22px] bg-white p-4 dark:bg-surface-dark">
-        <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="text-[10px] font-bold tracking-[1px] text-muted-light dark:text-muted-dark">
-              TODAY&apos;S PROGRESS
-            </Text>
-            <Text className="mt-1 text-[19px] font-bold text-ink-light dark:text-ink-dark">
-              Your daily goal
-            </Text>
-          </View>
-          <View className="h-10 w-10 items-center justify-center rounded-full bg-selected-light dark:bg-selected-dark">
-            <Text className="text-base">✓</Text>
-          </View>
-        </View>
-        <View className="mt-4 flex-row items-baseline justify-between">
-          <Text className="text-[25px] font-bold text-brand-primary dark:text-[#A8C8B2]">
-            1,240{" "}
-            <Text className="text-xs font-medium text-muted-light dark:text-muted-dark">
-              / 2,000 kcal
-            </Text>
-          </Text>
-          <Text className="text-xs font-bold text-brand-primary dark:text-[#A8C8B2]">
-            62%
-          </Text>
-        </View>
-        <View className="mt-2 h-[9px] overflow-hidden rounded-full bg-[#E8F0E7] dark:bg-selected-dark">
-          <View className="h-full w-[62%] rounded-full bg-brand-primary" />
-        </View>
-        <View className="mt-4 flex-row items-center justify-between border-t border-brand-border pt-3 dark:border-selected-dark">
-          <View>
-            <Text className="text-[10px] font-bold tracking-[0.7px] text-muted-light dark:text-muted-dark">
-              FOOD HISTORY
-            </Text>
-            <Text className="mt-1 text-xs font-semibold text-ink-light dark:text-ink-dark">
-              Breakfast · Lunch · Dinner
-            </Text>
-          </View>
-          <Text className="text-sm font-bold text-brand-primary dark:text-[#A8C8B2]">
-            3 meals
-          </Text>
-        </View>
-      </View>
-      <View className="absolute -right-1 -top-2 h-14 w-14 rounded-full border-[9px] border-[#FFFFFF55]" />
+          </Pressable>
+        );
+      })}
     </View>
   );
 }
 
 export default function OnboardingScreen() {
   const db = useSQLiteContext();
+  const { setFocus } = useAppSettings();
   const { height, width } = useWindowDimensions();
   const scrollRef = useRef<ScrollViewInstance | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
+  const [selectedFocus, setSelectedFocus] = useState<UserFocus>("balanced");
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const artworkHeight = Math.min(
-    310,
-    Math.max(165, height * (height < 700 ? 0.29 : 0.34)),
+    290,
+    Math.max(170, height * (height < 700 ? 0.27 : 0.32)),
   );
-  const previousWidth = useRef(width);
+  const slideWidth = Math.min(width, 560) - 48;
+  const previousWidth = useRef(slideWidth);
 
   useEffect(() => {
-    if (previousWidth.current !== width) {
-      previousWidth.current = width;
-      scrollRef.current?.scrollTo({ x: width * currentPage, animated: false });
+    if (previousWidth.current !== slideWidth) {
+      previousWidth.current = slideWidth;
+      scrollRef.current?.scrollTo({
+        x: slideWidth * currentPage,
+        animated: false,
+      });
     }
-  }, [currentPage, width]);
+  }, [currentPage, slideWidth]);
 
   const goToPage = (page: number) => {
-    scrollRef.current?.scrollTo({ x: width * page, animated: true });
+    scrollRef.current?.scrollTo({ x: slideWidth * page, animated: true });
     setCurrentPage(page);
   };
 
   const onScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    setCurrentPage(Math.round(event.nativeEvent.contentOffset.x / width));
+    setCurrentPage(Math.round(event.nativeEvent.contentOffset.x / slideWidth));
   };
 
   const finish = async () => {
-    if (isSaving) {
-      return;
-    }
-
+    if (isSaving) return;
     setError(null);
     setIsSaving(true);
     try {
+      await setFocus(selectedFocus);
       await completeOnboarding(db);
       router.replace("/");
     } catch (cause) {
       setError(
         cause instanceof Error
           ? cause.message
-          : "Could not save your onboarding progress.",
+          : "Impossible d'enregistrer tes préférences.",
       );
     } finally {
       setIsSaving(false);
@@ -251,7 +260,7 @@ export default function OnboardingScreen() {
               className="min-h-11 items-center justify-center px-2"
             >
               <Text className="text-sm font-semibold text-muted-light dark:text-muted-dark">
-                Skip
+                Passer
               </Text>
             </Pressable>
           ) : (
@@ -267,7 +276,7 @@ export default function OnboardingScreen() {
           showsHorizontalScrollIndicator={false}
           onMomentumScrollEnd={onScrollEnd}
           scrollEventThrottle={16}
-          accessibilityLabel="FoodLens onboarding"
+          accessibilityLabel="Présentation de FoodLens"
           className="flex-1"
           contentContainerStyle={{ flexGrow: 1 }}
         >
@@ -275,24 +284,27 @@ export default function OnboardingScreen() {
             <View
               key={slide.eyebrow}
               className="flex-1 justify-center"
-              style={{ width }}
+              style={{ width: slideWidth }}
             >
               <View className="mx-auto w-full max-w-[480px]">
                 {index === 0 ? (
                   <WelcomeArtwork height={artworkHeight} />
                 ) : index === 1 ? (
-                  <NutritionArtwork height={artworkHeight} />
+                  <FitnessArtwork height={artworkHeight} />
                 ) : (
-                  <ProgressArtwork height={artworkHeight} />
+                  <FocusSelector
+                    selectedFocus={selectedFocus}
+                    onSelect={setSelectedFocus}
+                  />
                 )}
-                <View className="mt-[22px]">
-                  <Text className="text-[9px] font-bold tracking-[1.25px] text-brand-primary dark:text-[#A8C8B2]">
+                <View className="mt-6">
+                  <Text className="text-[10px] font-bold tracking-[1.2px] text-brand-primary dark:text-[#8CC0A0]">
                     {slide.eyebrow}
                   </Text>
-                  <Text className="mt-[9px] text-[31px] font-bold leading-[36px] tracking-[-1px] text-ink-light dark:text-ink-dark">
+                  <Text className="mt-2 text-[28px] font-extrabold leading-[34px] tracking-[-0.6px] text-ink-light dark:text-ink-dark">
                     {slide.title}
                   </Text>
-                  <Text className="mt-2 max-w-[440px] text-[14px] leading-[21px] text-muted-light dark:text-muted-dark">
+                  <Text className="mt-2 text-[14px] leading-[21px] text-muted-light dark:text-muted-dark">
                     {slide.description}
                   </Text>
                 </View>
@@ -304,8 +316,8 @@ export default function OnboardingScreen() {
         <View className="mx-auto w-full max-w-[480px] pb-3 pt-2">
           <View
             accessibilityRole="progressbar"
-            accessibilityLabel={`Onboarding page ${currentPage + 1} of ${slides.length}`}
-            className="mb-[18px] flex-row items-center justify-center gap-[7px]"
+            accessibilityLabel={`Étape ${currentPage + 1} sur ${slides.length}`}
+            className="mb-4 flex-row items-center justify-center gap-2"
           >
             {slides.map((slide, index) => (
               <View
@@ -322,15 +334,22 @@ export default function OnboardingScreen() {
           {error ? (
             <Text
               accessibilityRole="alert"
-              className="mb-2 text-center text-xs text-[#A53F35]"
+              className="mb-2 text-center text-xs text-danger-light dark:text-danger-dark"
             >
               {error}
             </Text>
           ) : null}
 
-          <Pressable
-            accessibilityRole="button"
-            disabled={isSaving}
+          <AppButton
+            label={
+              isSaving
+                ? "Enregistrement…"
+                : currentPage === slides.length - 1
+                  ? "Commencer"
+                  : "Suivant"
+            }
+            variant="primary"
+            loading={isSaving}
             onPress={() => {
               if (currentPage === slides.length - 1) {
                 void finish();
@@ -338,21 +357,7 @@ export default function OnboardingScreen() {
                 goToPage(currentPage + 1);
               }
             }}
-            className="min-h-[56px] flex-row items-center justify-center gap-2 rounded-[18px] bg-brand-primary px-5 active:opacity-80 disabled:opacity-60"
-          >
-            <Text className="text-base font-bold text-white">
-              {isSaving
-                ? "Saving…"
-                : currentPage === slides.length - 1
-                  ? "Get Started"
-                  : "Next"}
-            </Text>
-            {!isSaving && currentPage < slides.length - 1 ? (
-              <Text aria-hidden className="text-lg font-semibold text-white">
-                →
-              </Text>
-            ) : null}
-          </Pressable>
+          />
         </View>
       </View>
     </SafeAreaView>

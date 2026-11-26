@@ -87,6 +87,7 @@ export function OnboardingGate() {
       ![
         "/",
         "/journal",
+        "/fitness",
         "/stats",
         "/profile",
         "/scanner",

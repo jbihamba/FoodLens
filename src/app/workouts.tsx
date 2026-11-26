@@ -1,25 +1,208 @@
 import { router, useFocusEffect } from "expo-router";
+import { useSQLiteContext } from "expo-sqlite";
 import { useCallback, useState } from "react";
 import { ActivityIndicator, ScrollView, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useSQLiteContext } from "expo-sqlite";
 
 import { Pressable, Text } from "@/components/LocalizedText";
-import { getActiveWorkoutSession, getWorkoutCategories } from "@/services/workouts";
-import type { WorkoutCategory, WorkoutSession } from "@/types/workout";
+import { AppCard } from "@/components/ui/AppCard";
+import {
+  ChevronRightIcon,
+  ClockIcon,
+  FitnessIcon,
+} from "@/components/ui/Icons";
+import { ScreenHeader } from "@/components/ui/ScreenHeader";
+import { theme } from "@/constants/theme";
+import { localizeCategory, localizePlan } from "@/constants/workoutLabels";
+import {
+  getActiveWorkoutSession,
+  getWorkoutCategories,
+  getWorkoutStats,
+} from "@/services/workouts";
+import { useAppSettings } from "@/stores/app-settings";
+import type {
+  WorkoutCategory,
+  WorkoutSession,
+  WorkoutStats,
+} from "@/types/workout";
 
 export default function WorkoutsScreen() {
   const db = useSQLiteContext();
+  const { resolvedColorScheme } = useAppSettings();
   const [categories, setCategories] = useState<WorkoutCategory[]>([]);
-  const [activeSession, setActiveSession] = useState<WorkoutSession | null>(null);
-  useFocusEffect(useCallback(() => { void Promise.all([getWorkoutCategories(db), getActiveWorkoutSession(db)]).then(([nextCategories, nextSession]) => { setCategories(nextCategories); setActiveSession(nextSession); }); }, [db]));
-  return <SafeAreaView edges={["top"]} className="flex-1 bg-canvas-light dark:bg-canvas-dark">
-    <ScrollView contentContainerClassName="px-5 pb-10 pt-4" showsVerticalScrollIndicator={false}>
-      <View className="flex-row items-center justify-between"><View><Text className="text-[13px] font-semibold text-muted-light dark:text-muted-dark">FoodLens</Text><Text className="text-[28px] font-extrabold text-ink-light dark:text-ink-dark">Entraînement</Text></View><Pressable onPress={() => router.push("/workout-history")} className="min-h-11 justify-center px-2"><Text className="font-bold text-brand-primary">Historique</Text></Pressable></View>
-      <Text className="mt-2 text-[14px] leading-5 text-muted-light dark:text-muted-dark">Choisis une zone et avance à ton rythme. Aucun équipement obligatoire.</Text>
-      {activeSession ? <Pressable onPress={() => router.push({ pathname: "/active-workout", params: { sessionId: String(activeSession.id) } })} className="mt-5 rounded-[20px] bg-brand-primary p-4"><Text className="text-[12px] font-bold text-white/80">Séance en cours</Text><Text className="mt-1 text-[17px] font-extrabold text-white">Reprendre · {activeSession.plan_name}</Text></Pressable> : null}
-      <Text className="mb-3 mt-7 text-[18px] font-extrabold text-ink-light dark:text-ink-dark">Explorer par zone</Text>
-      {!categories.length ? <ActivityIndicator color="#245C45" /> : <View className="gap-3">{categories.map((category) => <Pressable key={category.id} onPress={() => router.push({ pathname: "/workout-plan", params: { categoryId: String(category.id) } })} className="flex-row items-center rounded-[22px] bg-surface-light p-4 dark:bg-surface-dark"><View style={{ backgroundColor: category.accent }} className="h-16 w-16 items-center justify-center rounded-[18px]"><Text className="text-[30px]">{category.icon}</Text></View><View className="ml-4 flex-1"><Text className="text-[17px] font-extrabold text-ink-light dark:text-ink-dark">{category.name}</Text><Text className="mt-1 text-[12px] leading-4 text-muted-light dark:text-muted-dark">{category.description}</Text></View><Text className="text-[24px] text-brand-primary">›</Text></Pressable>)}</View>}
-    </ScrollView>
-  </SafeAreaView>;
+  const [activeSession, setActiveSession] = useState<WorkoutSession | null>(
+    null,
+  );
+  const [stats, setStats] = useState<WorkoutStats | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const isDark = resolvedColorScheme === "dark";
+  const fitnessColor = isDark
+    ? theme.colors.fitnessDark
+    : theme.colors.fitness;
+
+  useFocusEffect(
+    useCallback(() => {
+      let active = true;
+      void Promise.all([
+        getWorkoutCategories(db),
+        getActiveWorkoutSession(db),
+        getWorkoutStats(db),
+      ])
+        .then(([nextCategories, nextSession, nextStats]) => {
+          if (!active) return;
+          setCategories(nextCategories);
+          setActiveSession(nextSession);
+          setStats(nextStats);
+        })
+        .finally(() => {
+          if (active) setIsLoading(false);
+        });
+      return () => {
+        active = false;
+      };
+    }, [db]),
+  );
+
+  return (
+    <SafeAreaView
+      edges={["top"]}
+      className="flex-1 bg-canvas-light dark:bg-canvas-dark"
+    >
+      <ScrollView
+        contentContainerClassName="mx-auto w-full max-w-[560px] px-5 pb-10 pt-2"
+        showsVerticalScrollIndicator={false}
+      >
+        <ScreenHeader
+          title="Fitness"
+          subtitle="Choisis une zone musculaire et avance à ton rythme"
+          rightAction={
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Historique des entraînements"
+              onPress={() => router.push("/workout-history")}
+              className="min-h-11 flex-row items-center gap-1.5 rounded-full border border-brand-border bg-surface-light px-3.5 dark:border-selected-dark dark:bg-surface-dark"
+            >
+              <ClockIcon size={15} color={fitnessColor} />
+              <Text className="text-[12px] font-bold text-fitness-primary dark:text-fitness-dark">
+                Historique
+              </Text>
+            </Pressable>
+          }
+        />
+
+        {/* Séance en cours */}
+        {activeSession ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={`Reprendre ${activeSession.plan_name}`}
+            onPress={() =>
+              router.push({
+                pathname: "/active-workout",
+                params: { sessionId: String(activeSession.id) },
+              })
+            }
+            className="mt-5"
+          >
+            <View className="flex-row items-center gap-3.5 rounded-[22px] bg-fitness-primary p-4">
+              <View className="h-12 w-12 items-center justify-center rounded-[16px] bg-white/20">
+                <FitnessIcon size={22} color="#FFFFFF" />
+              </View>
+              <View className="flex-1">
+                <Text className="text-[11px] font-bold uppercase tracking-[0.8px] text-white/85">
+                  Séance en cours
+                </Text>
+                <Text className="mt-0.5 text-[17px] font-extrabold text-white">
+                  Reprendre ·{" "}
+                  {localizePlan(activeSession.plan_name, "").name}
+                </Text>
+              </View>
+              <ChevronRightIcon size={22} color="#FFFFFF" />
+            </View>
+          </Pressable>
+        ) : null}
+
+        {/* Mini résumé hebdo si l'utilisateur a déjà pratiqué */}
+        {stats && stats.totalSessions > 0 ? (
+          <AppCard variant="default" className="mt-4 flex-row items-center justify-between">
+            <View>
+              <Text className="text-[12px] font-semibold text-muted-light dark:text-muted-dark">
+                Cette semaine
+              </Text>
+              <Text className="mt-0.5 text-[16px] font-extrabold text-ink-light dark:text-ink-dark">
+                {stats.currentWeekSessions} séance
+                {stats.currentWeekSessions > 1 ? "s" : ""} ·{" "}
+                {Math.max(1, Math.round(stats.totalTrainingSeconds / 60))} min au total
+              </Text>
+            </View>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push("/workout-history")}
+              className="min-h-9 justify-center px-2"
+            >
+              <Text className="text-[12px] font-bold text-fitness-primary dark:text-fitness-dark">
+                Détails ›
+              </Text>
+            </Pressable>
+          </AppCard>
+        ) : null}
+
+        {/* Grille des zones musculaires */}
+        <View className="mt-6">
+          <Text className="mb-3 text-[17px] font-bold text-ink-light dark:text-ink-dark">
+            Zones musculaires
+          </Text>
+
+          {isLoading && !categories.length ? (
+            <View className="py-10">
+              <ActivityIndicator color="#D97736" />
+            </View>
+          ) : (
+            <View className="flex-row flex-wrap justify-between gap-y-3">
+              {categories.map((category) => {
+                const localized = localizeCategory(
+                  category.slug,
+                  category.name,
+                  category.description,
+                );
+                return (
+                  <Pressable
+                    key={category.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Zone ${localized.name}`}
+                    onPress={() =>
+                      router.push({
+                        pathname: "/workout-plan",
+                        params: {
+                          categoryId: String(category.id),
+                          categorySlug: category.slug,
+                        },
+                      })
+                    }
+                    className="w-[48.5%] rounded-[22px] border border-brand-border bg-surface-light p-4 active:opacity-85 dark:border-selected-dark dark:bg-surface-dark"
+                  >
+                    <View
+                      style={{ backgroundColor: category.accent }}
+                      className="h-12 w-12 items-center justify-center rounded-[14px]"
+                    >
+                      <Text className="text-[24px]">{category.icon}</Text>
+                    </View>
+                    <Text className="mt-3 text-[16px] font-extrabold text-ink-light dark:text-ink-dark">
+                      {localized.name}
+                    </Text>
+                    <Text
+                      numberOfLines={2}
+                      className="mt-1 text-[12px] leading-4 text-muted-light dark:text-muted-dark"
+                    >
+                      {localized.description}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
 }

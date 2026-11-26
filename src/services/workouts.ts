@@ -151,7 +151,27 @@ export async function getPlanExercises(db: SQLiteDatabase, planId: number) { ret
 export async function getExerciseDetails(db: SQLiteDatabase, planExerciseId: number) { return db.getFirstAsync<ExerciseDetails>(`SELECT pe.id plan_exercise_id,p.id plan_id,pe.exercise_order,pe.duration_seconds,pe.repetitions,pe.rest_seconds,e.id,e.name,e.description,e.instructions,e.equipment,e.image_uri,e.targeted_muscles,p.difficulty plan_difficulty,em.media_type,em.source_uri media_source_uri,em.asset_key media_asset_key,em.poster_uri media_poster_uri,em.source media_source,em.license media_license,em.attribution media_attribution FROM workout_plan_exercises pe JOIN exercises e ON e.id=pe.exercise_id JOIN workout_plans p ON p.id=pe.plan_id LEFT JOIN exercise_media em ON em.exercise_id=e.id WHERE pe.id=?`, planExerciseId); }
 export async function createWorkoutSession(db: SQLiteDatabase, planId: number) { const timestamp = now(); let sessionId = 0; await db.withTransactionAsync(async () => { sessionId = (await db.runAsync("INSERT INTO workout_sessions (plan_id,started_at,status,created_at,updated_at) VALUES (?,?, 'active',?,?)", planId, timestamp, timestamp, timestamp)).lastInsertRowId; await db.runAsync("INSERT INTO workout_session_exercises (session_id,exercise_id,exercise_order,duration_seconds,rest_seconds,status) SELECT ?,exercise_id,exercise_order,duration_seconds,rest_seconds,'pending' FROM workout_plan_exercises WHERE plan_id=? ORDER BY exercise_order", sessionId, planId); }); return sessionId; }
 export async function getActiveWorkoutSession(db: SQLiteDatabase) { return db.getFirstAsync<WorkoutSession>(`SELECT s.id,s.plan_id,p.name plan_name,c.name category_name,s.started_at,s.finished_at,s.status,s.paused_seconds,s.total_rest_seconds FROM workout_sessions s JOIN workout_plans p ON p.id=s.plan_id JOIN workout_categories c ON c.id=p.category_id WHERE s.status='active' ORDER BY s.id DESC LIMIT 1`); }
-export async function getSessionExercises(db: SQLiteDatabase, sessionId: number) { return db.getAllAsync<WorkoutSessionExercise>(`SELECT se.id,se.session_id,se.exercise_id,e.name exercise_name,se.exercise_order,se.duration_seconds,se.rest_seconds,se.status,se.started_at,se.completed_at FROM workout_session_exercises se JOIN exercises e ON e.id=se.exercise_id WHERE se.session_id=? ORDER BY se.exercise_order`, sessionId); }
+export async function getSessionExercises(db: SQLiteDatabase, sessionId: number) {
+  return db.getAllAsync<WorkoutSessionExercise>(
+    `SELECT se.id,se.session_id,se.exercise_id,e.name exercise_name,se.exercise_order,se.duration_seconds,se.rest_seconds,se.status,se.started_at,se.completed_at,e.description,e.instructions,e.equipment,e.image_uri,e.targeted_muscles,em.media_type,em.source_uri media_source_uri,em.asset_key media_asset_key,em.poster_uri media_poster_uri,em.source media_source,em.license media_license,em.attribution media_attribution
+     FROM workout_session_exercises se
+     JOIN exercises e ON e.id=se.exercise_id
+     LEFT JOIN exercise_media em ON em.exercise_id=e.id
+     WHERE se.session_id=?
+     ORDER BY se.exercise_order`,
+    sessionId,
+  );
+}
+export async function getWorkoutSessionById(db: SQLiteDatabase, sessionId: number) {
+  return db.getFirstAsync<WorkoutSession>(
+    `SELECT s.id,s.plan_id,p.name plan_name,c.name category_name,s.started_at,s.finished_at,s.status,s.paused_seconds,s.total_rest_seconds
+     FROM workout_sessions s
+     JOIN workout_plans p ON p.id=s.plan_id
+     JOIN workout_categories c ON c.id=p.category_id
+     WHERE s.id=?`,
+    sessionId,
+  );
+}
 export async function updateSessionExercise(db: SQLiteDatabase, id: number, status: ExerciseStatus) { const timestamp = now(); await db.runAsync("UPDATE workout_session_exercises SET status=?, started_at=CASE WHEN ?='in_progress' AND started_at IS NULL THEN ? ELSE started_at END, completed_at=CASE WHEN ? IN ('completed','skipped') THEN ? ELSE completed_at END WHERE id=?", status, status, timestamp, status, timestamp, id); }
 export async function finishWorkoutSession(db: SQLiteDatabase, sessionId: number, status: "completed" | "abandoned", totalRestSeconds: number) { await db.runAsync("UPDATE workout_sessions SET status=?,finished_at=?,total_rest_seconds=?,updated_at=? WHERE id=?", status, now(), totalRestSeconds, now(), sessionId); }
 export async function getWorkoutHistory(db: SQLiteDatabase) { return db.getAllAsync<WorkoutSession>(`SELECT s.id,s.plan_id,p.name plan_name,c.name category_name,s.started_at,s.finished_at,s.status,s.paused_seconds,s.total_rest_seconds FROM workout_sessions s JOIN workout_plans p ON p.id=s.plan_id JOIN workout_categories c ON c.id=p.category_id WHERE s.status='completed' ORDER BY s.started_at DESC`); }
