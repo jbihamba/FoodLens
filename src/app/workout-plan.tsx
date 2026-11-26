@@ -14,6 +14,7 @@ import {
   PlayIcon,
 } from "@/components/ui/Icons";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
+import { ExerciseThumbnail } from "@/components/workout/ExerciseThumbnail";
 import { theme } from "@/constants/theme";
 import {
   DIFFICULTY_LABELS,
@@ -203,6 +204,13 @@ export default function WorkoutPlanScreen() {
                             <Text className="text-[13px] font-extrabold text-fitness-primary dark:text-fitness-dark">
                               {index + 1}
                             </Text>
+                          </View>
+                          <View className="h-14 w-14 items-center justify-center rounded-[16px] bg-fitness-softLight dark:bg-fitness-softDark">
+                            <ExerciseThumbnail
+                              exerciseName={exercise.name}
+                              size={48}
+                              color={fitnessColor}
+                            />
                           </View>
                           <View className="flex-1">
                             <Text className="text-[15px] font-bold text-ink-light dark:text-ink-dark">

@@ -203,8 +203,6 @@ export default function NutritionScreen() {
               icon={<NutritionIcon size={24} color={accentColor} />}
               title="Ton journal est prêt"
               description="Scanne un repas, un code-barres ou ajoute un aliment manuellement pour le retrouver ici."
-              actionLabel="Scanner un plat"
-              onAction={() => router.push("/scanner")}
             />
           )}
         </View>

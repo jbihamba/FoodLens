@@ -9,25 +9,35 @@ import {
 } from "react-native";
 
 import { Text } from "@/components/LocalizedText";
-import { FitnessIcon } from "@/components/ui/Icons";
-import { bundledExerciseMedia } from "@/constants/exerciseMedia";
+import {
+  bundledExerciseImages,
+  bundledExerciseMedia,
+} from "@/constants/exerciseMedia";
+import { ExercisePoseIllustration } from "@/components/workout/WorkoutVisuals";
 import type { ExerciseMediaType } from "@/types/workout";
 
 export interface ExerciseMediaInput {
+  name?: string | null;
   media_type?: ExerciseMediaType | null;
   media_source_uri?: string | null;
   media_asset_key?: string | null;
   image_uri?: string | null;
 }
 
-function FallbackIllustration({ height = 224 }: { height?: number }) {
+function FallbackIllustration({
+  height = 224,
+  exerciseName = "exercice",
+}: {
+  height?: number;
+  exerciseName?: string;
+}) {
   return (
     <View
       style={{ height }}
       className="items-center justify-center rounded-[24px] border border-[#F5D6BE] bg-fitness-softLight px-6 dark:border-[#523824] dark:bg-fitness-softDark"
     >
       <View className="h-16 w-16 items-center justify-center rounded-full bg-surface-light dark:bg-surface-dark">
-        <FitnessIcon size={30} color="#D97736" />
+        <ExercisePoseIllustration exerciseName={exerciseName} size={42} />
       </View>
       <Text className="mt-3 text-center text-[13px] font-bold text-fitness-primary dark:text-fitness-dark">
         Suis les instructions ci-dessous
@@ -42,9 +52,11 @@ function FallbackIllustration({ height = 224 }: { height?: number }) {
 function VideoDemo({
   source,
   height = 224,
+  exerciseName,
 }: {
   source: string | number;
   height?: number;
+  exerciseName: string;
 }) {
   const videoSource =
     typeof source === "number" ? source : { uri: source, useCaching: true };
@@ -59,7 +71,7 @@ function VideoDemo({
   const [paused, setPaused] = useState(false);
 
   if (status === "error" || error) {
-    return <FallbackIllustration height={height} />;
+    return <FallbackIllustration height={height} exerciseName={exerciseName} />;
   }
 
   return (
@@ -95,18 +107,22 @@ function VideoDemo({
 function ImageDemo({
   source,
   height = 224,
+  exerciseName,
 }: {
   source: string | number;
   height?: number;
+  exerciseName: string;
 }) {
   const [failed, setFailed] = useState(false);
-  if (failed) return <FallbackIllustration height={height} />;
+  if (failed) return <FallbackIllustration height={height} exerciseName={exerciseName} />;
 
   return (
     <View className="overflow-hidden rounded-[24px] border border-brand-border bg-surface-light dark:border-selected-dark dark:bg-surface-dark">
       <Image
         source={source}
         contentFit="cover"
+        cachePolicy="disk"
+        transition={150}
         style={{ width: "100%", height }}
         onError={() => setFailed(true)}
       />
@@ -125,18 +141,23 @@ export function ExerciseMediaDemo({
     ? bundledExerciseMedia[exercise.media_asset_key]
     : undefined;
   const source = exercise.media_source_uri ?? bundledSource;
+  const exerciseName = exercise.name ?? "exercice";
 
   if (exercise.media_type === "mp4" && source !== undefined) {
-    return <VideoDemo source={source} height={height} />;
+    return <VideoDemo source={source} height={height} exerciseName={exerciseName} />;
   }
   if (
     (exercise.media_type === "image" || exercise.media_type === "gif") &&
     source !== undefined
   ) {
-    return <ImageDemo source={source} height={height} />;
+    return <ImageDemo source={source} height={height} exerciseName={exerciseName} />;
   }
   if (exercise.image_uri) {
-    return <ImageDemo source={exercise.image_uri} height={height} />;
+    return <ImageDemo source={exercise.image_uri} height={height} exerciseName={exerciseName} />;
   }
-  return <FallbackIllustration height={height} />;
+  const bundledImage = bundledExerciseImages[exerciseName];
+  if (bundledImage !== undefined) {
+    return <ImageDemo source={bundledImage} height={height} exerciseName={exerciseName} />;
+  }
+  return <FallbackIllustration height={height} exerciseName={exerciseName} />;
 }

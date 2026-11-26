@@ -326,8 +326,6 @@ export default function HomeScreen() {
               icon={<CameraIcon size={24} color={accentColor} />}
               title="Aucun repas enregistré"
               description="Prends une photo de ton plat pour obtenir ses calories et nutriments en quelques secondes."
-              actionLabel="Scanner mon premier repas"
-              onAction={() => router.push("/scanner")}
             />
           )}
         </View>
