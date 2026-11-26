@@ -23,3 +23,16 @@ export const bundledExerciseImages: Record<string, number> = {
   "Jumping Jack": require("../../assets/exercises/jumping-jack.jpg"),
   "Shoulder Press": require("../../assets/exercises/shoulder-press.jpg"),
 };
+
+export const bundledCategoryImages: Record<string, number> = {
+  legs: require("../../assets/exercises/leg-press.jpg"),
+  chest: require("../../assets/exercises/push-up.jpg"),
+  back: require("../../assets/exercises/bent-over-row.jpg"),
+  arms: require("../../assets/exercises/arms-curl.jpg"),
+  shoulders: require("../../assets/exercises/shoulder-press.jpg"),
+  abs: require("../../assets/exercises/plank.jpg"),
+  glutes: require("../../assets/exercises/glute-bridge.jpg"),
+  calves: require("../../assets/exercises/calf-raise.jpg"),
+  "full-body": require("../../assets/exercises/jumping-jack.jpg"),
+  cardio: require("../../assets/exercises/march-in-place.jpg"),
+};

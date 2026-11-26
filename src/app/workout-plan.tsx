@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/Icons";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { ExerciseThumbnail } from "@/components/workout/ExerciseThumbnail";
+import { WorkoutCategoryPhoto } from "@/components/workout/WorkoutCategoryPhoto";
 import { theme } from "@/constants/theme";
 import {
   DIFFICULTY_LABELS,
@@ -133,7 +134,8 @@ export default function WorkoutPlanScreen() {
                         : "border-brand-border bg-surface-light dark:border-selected-dark dark:bg-surface-dark"
                     }`}
                   >
-                    <View className="flex-row items-start justify-between gap-2">
+                    <View className="flex-row items-start gap-3">
+                      <WorkoutCategoryPhoto slug={categorySlug ?? ""} size={56} />
                       <View className="flex-1">
                         <Text className="text-[17px] font-extrabold text-ink-light dark:text-ink-dark">
                           {localized.name}
@@ -209,7 +211,6 @@ export default function WorkoutPlanScreen() {
                             <ExerciseThumbnail
                               exerciseName={exercise.name}
                               size={48}
-                              color={fitnessColor}
                             />
                           </View>
                           <View className="flex-1">

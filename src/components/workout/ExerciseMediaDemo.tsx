@@ -13,11 +13,11 @@ import {
   bundledExerciseImages,
   bundledExerciseMedia,
 } from "@/constants/exerciseMedia";
-import { ExercisePoseIllustration } from "@/components/workout/WorkoutVisuals";
 import type { ExerciseMediaType } from "@/types/workout";
 
 export interface ExerciseMediaInput {
   name?: string | null;
+  exercise_name?: string | null;
   media_type?: ExerciseMediaType | null;
   media_source_uri?: string | null;
   media_asset_key?: string | null;
@@ -31,13 +31,29 @@ function FallbackIllustration({
   height?: number;
   exerciseName?: string;
 }) {
+  const bundledImage = bundledExerciseImages[exerciseName];
+  if (bundledImage !== undefined) {
+    return (
+      <View className="overflow-hidden rounded-[24px] bg-surface-light dark:bg-surface-dark">
+        <Image
+          source={bundledImage}
+          contentFit="cover"
+          cachePolicy="disk"
+          style={{ width: "100%", height }}
+        />
+      </View>
+    );
+  }
+
   return (
     <View
       style={{ height }}
       className="items-center justify-center rounded-[24px] border border-[#F5D6BE] bg-fitness-softLight px-6 dark:border-[#523824] dark:bg-fitness-softDark"
     >
       <View className="h-16 w-16 items-center justify-center rounded-full bg-surface-light dark:bg-surface-dark">
-        <ExercisePoseIllustration exerciseName={exerciseName} size={42} />
+        <Text className="text-center text-[12px] font-bold text-fitness-primary dark:text-fitness-dark">
+          Démonstration indisponible
+        </Text>
       </View>
       <Text className="mt-3 text-center text-[13px] font-bold text-fitness-primary dark:text-fitness-dark">
         Suis les instructions ci-dessous
@@ -141,7 +157,7 @@ export function ExerciseMediaDemo({
     ? bundledExerciseMedia[exercise.media_asset_key]
     : undefined;
   const source = exercise.media_source_uri ?? bundledSource;
-  const exerciseName = exercise.name ?? "exercice";
+  const exerciseName = exercise.name ?? exercise.exercise_name ?? "exercice";
 
   if (exercise.media_type === "mp4" && source !== undefined) {
     return <VideoDemo source={source} height={height} exerciseName={exerciseName} />;

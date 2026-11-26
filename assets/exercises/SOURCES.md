@@ -27,3 +27,5 @@ The JPEGs below are locally bundled thumbnails. They are loaded through Expo Ima
 | `march-in-place.jpg` | March in Place | [Semper Fi Practice Day 3](https://commons.wikimedia.org/wiki/File:Semper_Fi_Practice_Day_3_160101-M-AH293-017.jpg) | Public domain | U.S. Marine Corps / Rebecca Eller |
 | `jumping-jack.jpg` | Jumping Jack | [Jumping Jack (1)](https://commons.wikimedia.org/wiki/File:Jumping_Jack_%281%29.jpg) | CC BY-SA 2.0 | sluj78 |
 | `shoulder-press.jpg` | Shoulder Press | [How to do an Overhead Press](https://commons.wikimedia.org/wiki/File:How_to_do_an_Overhead_Press.jpg) | CC BY-SA 4.0 | RangerJim |
+| `arms-curl.jpg` | Arms category | [Woman standing in front of a dumbbell rack doing bicep curls](https://commons.wikimedia.org/wiki/File:Woman_standing_in_front_of_a_dumbbell_rack_doing_bicep_curls.jpg) | CC BY 2.0 | Shixart1985 |
+| `leg-press.jpg` | Legs category | [Young man using a leg press machine at the gym](https://commons.wikimedia.org/wiki/File:Young_man_using_a_leg_press_machine_at_the_gym.jpg) | CC BY 2.0 | Nenad Stojkovic |

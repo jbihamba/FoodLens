@@ -12,7 +12,7 @@ import {
   FitnessIcon,
 } from "@/components/ui/Icons";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
-import { MuscleGroupIllustration } from "@/components/workout/WorkoutVisuals";
+import { WorkoutCategoryPhoto } from "@/components/workout/WorkoutCategoryPhoto";
 import { theme } from "@/constants/theme";
 import { localizeCategory, localizePlan } from "@/constants/workoutLabels";
 import {
@@ -182,12 +182,7 @@ export default function WorkoutsScreen() {
                     }
                     className="w-[48.5%] rounded-[22px] border border-brand-border bg-surface-light p-4 active:opacity-85 dark:border-selected-dark dark:bg-surface-dark"
                   >
-                    <View
-                      style={{ backgroundColor: category.accent }}
-                      className="h-12 w-12 items-center justify-center rounded-[14px]"
-                    >
-                      <MuscleGroupIllustration slug={category.slug} color={fitnessColor} />
-                    </View>
+                    <WorkoutCategoryPhoto slug={category.slug} size={64} />
                     <Text className="mt-3 text-[16px] font-extrabold text-ink-light dark:text-ink-dark">
                       {localized.name}
                     </Text>
