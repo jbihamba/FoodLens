@@ -4,6 +4,7 @@ import type {
   ExerciseStatus,
   WorkoutCategory,
   WorkoutDifficulty,
+  ExerciseDetails,
   WorkoutPlan,
   WorkoutPlanExercise,
   WorkoutSession,
@@ -11,7 +12,14 @@ import type {
   WorkoutStats,
 } from "@/types/workout";
 
-const WORKOUT_SCHEMA_VERSION = 1;
+const WORKOUT_SCHEMA_VERSION = 3;
+
+const exerciseMediaSeed = [
+  ["Bodyweight Squat", "gif", "bodyweight-squat", "https://commons.wikimedia.org/wiki/File:Squats_01.gif", "CC BY 3.0", "Zimmermanns"],
+  ["Push-up", "gif", "push-up", "https://commons.wikimedia.org/wiki/File:Liegestuetz02_ani_fcm.gif", "CC BY-SA 4.0", "Frank C. Müller"],
+  ["Calf Raise", "gif", "calf-raise", "https://commons.wikimedia.org/wiki/File:Standing-calf-raises-1.gif", "CC BY-SA 3.0", "Everkinetic"],
+  ["Jumping Jack", "gif", "jumping-jack", "https://commons.wikimedia.org/wiki/File:Vitruvian_jumping_jacks.gif", "Public domain", "Damian Yerrick"],
+] as const;
 
 const categories = [
   ["legs", "Legs", "Build strength and control from the ground up.", "🦵", "#EAF5E8"],
@@ -27,16 +35,16 @@ const categories = [
 ] as const;
 
 const exerciseSeed = [
-  ["Bodyweight Squat", "A controlled squat using your body weight.", "Stand tall, sit hips back, then drive through your feet.", "None"],
-  ["Push-up", "A classic horizontal push movement.", "Keep your body in one line and lower with control.", "None"],
-  ["Bent-over Row", "A back-focused pulling movement.", "Hinge at the hips, keep your back neutral, and pull elbows back.", "Dumbbell or household weight"],
-  ["Reverse Lunge", "An alternating single-leg movement.", "Step back softly and keep the front knee tracking over the foot.", "None"],
-  ["Plank", "A static core stability hold.", "Brace your middle and breathe steadily without dropping your hips.", "None"],
-  ["Glute Bridge", "A floor-based hip extension movement.", "Press through your heels and pause briefly at the top.", "None"],
-  ["Calf Raise", "A controlled lower-leg strength movement.", "Rise onto the balls of your feet, pause, and lower slowly.", "None"],
-  ["March in Place", "A simple rhythmic cardio movement.", "Stand tall and alternate lifting your knees at a comfortable pace.", "None"],
-  ["Jumping Jack", "A light full-body cardio movement.", "Move smoothly and choose a step-out version if needed.", "None"],
-  ["Shoulder Press", "An overhead pressing movement.", "Press evenly overhead while keeping ribs comfortably down.", "Dumbbell or household weight"],
+  ["Bodyweight Squat", "A controlled squat using your body weight.", "Stand tall, sit hips back, then drive through your feet.", "None", "Quadriceps · Glutes · Hamstrings"],
+  ["Push-up", "A classic horizontal push movement.", "Keep your body in one line and lower with control.", "None", "Chest · Triceps · Shoulders"],
+  ["Bent-over Row", "A back-focused pulling movement.", "Hinge at the hips, keep your back neutral, and pull elbows back.", "Dumbbell or household weight", "Upper back · Lats · Biceps"],
+  ["Reverse Lunge", "An alternating single-leg movement.", "Step back softly and keep the front knee tracking over the foot.", "None", "Glutes · Quadriceps · Hamstrings"],
+  ["Plank", "A static core stability hold.", "Brace your middle and breathe steadily without dropping your hips.", "None", "Abdominals · Shoulders · Glutes"],
+  ["Glute Bridge", "A floor-based hip extension movement.", "Press through your heels and pause briefly at the top.", "None", "Glutes · Hamstrings · Core"],
+  ["Calf Raise", "A controlled lower-leg strength movement.", "Rise onto the balls of your feet, pause, and lower slowly.", "None", "Calves"],
+  ["March in Place", "A simple rhythmic cardio movement.", "Stand tall and alternate lifting your knees at a comfortable pace.", "None", "Hip flexors · Calves · Core"],
+  ["Jumping Jack", "A light full-body cardio movement.", "Move smoothly and choose a step-out version if needed.", "None", "Full body · Calves · Shoulders"],
+  ["Shoulder Press", "An overhead pressing movement.", "Press evenly overhead while keeping ribs comfortably down.", "Dumbbell or household weight", "Shoulders · Triceps · Upper chest"],
 ] as const;
 
 function now() { return new Date().toISOString(); }
@@ -51,7 +59,13 @@ export async function initializeWorkoutDatabase(db: SQLiteDatabase) {
     );
     CREATE TABLE IF NOT EXISTS exercises (
       id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, description TEXT NOT NULL,
-      instructions TEXT NOT NULL, equipment TEXT, image_uri TEXT, created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+      instructions TEXT NOT NULL, equipment TEXT, image_uri TEXT, targeted_muscles TEXT NOT NULL DEFAULT 'Full body', created_at TEXT NOT NULL, updated_at TEXT NOT NULL
+    );
+    CREATE TABLE IF NOT EXISTS exercise_media (
+      exercise_id INTEGER PRIMARY KEY REFERENCES exercises(id) ON DELETE CASCADE,
+      media_type TEXT NOT NULL CHECK (media_type IN ('image','gif','mp4')),
+      source_uri TEXT, asset_key TEXT, poster_uri TEXT, source TEXT, license TEXT, attribution TEXT,
+      CHECK (source_uri IS NOT NULL OR asset_key IS NOT NULL)
     );
     CREATE TABLE IF NOT EXISTS workout_plans (
       id INTEGER PRIMARY KEY AUTOINCREMENT, category_id INTEGER NOT NULL REFERENCES workout_categories(id) ON DELETE CASCADE,
@@ -85,11 +99,24 @@ export async function initializeWorkoutDatabase(db: SQLiteDatabase) {
   if (Number(version?.value ?? 0) >= WORKOUT_SCHEMA_VERSION) return;
   await db.withTransactionAsync(async () => {
     const timestamp = now();
+    const exerciseColumns = await db.getAllAsync<{ name: string }>("PRAGMA table_info(exercises)");
+    if (!exerciseColumns.some((column) => column.name === "targeted_muscles")) {
+      await db.execAsync("ALTER TABLE exercises ADD COLUMN targeted_muscles TEXT NOT NULL DEFAULT 'Full body'");
+    }
+    const mediaColumns = await db.getAllAsync<{ name: string }>("PRAGMA table_info(exercise_media)");
+    for (const column of ["source", "license", "attribution"]) {
+      if (!mediaColumns.some((item) => item.name === column)) await db.execAsync(`ALTER TABLE exercise_media ADD COLUMN ${column} TEXT`);
+    }
     for (const [slug, name, description, icon, accent] of categories) {
       await db.runAsync("INSERT OR IGNORE INTO workout_categories (slug,name,description,icon,accent,created_at,updated_at) VALUES (?,?,?,?,?,?,?)", slug, name, description, icon, accent, timestamp, timestamp);
     }
-    for (const [name, description, instructions, equipment] of exerciseSeed) {
-      await db.runAsync("INSERT OR IGNORE INTO exercises (name,description,instructions,equipment,created_at,updated_at) VALUES (?,?,?,?,?,?)", name, description, instructions, equipment, timestamp, timestamp);
+    for (const [name, description, instructions, equipment, targetedMuscles] of exerciseSeed) {
+      await db.runAsync("INSERT OR IGNORE INTO exercises (name,description,instructions,equipment,targeted_muscles,created_at,updated_at) VALUES (?,?,?,?,?,?,?)", name, description, instructions, equipment, targetedMuscles, timestamp, timestamp);
+      await db.runAsync("UPDATE exercises SET targeted_muscles=?,updated_at=? WHERE name=?", targetedMuscles, timestamp, name);
+    }
+    for (const [exerciseName, mediaType, assetKey, source, license, attribution] of exerciseMediaSeed) {
+      const exercise = await db.getFirstAsync<{ id: number }>("SELECT id FROM exercises WHERE name=?", exerciseName);
+      if (exercise) await db.runAsync("INSERT OR REPLACE INTO exercise_media (exercise_id,media_type,source_uri,asset_key,poster_uri,source,license,attribution) VALUES (?,?,?,?,?,?,?,?)", exercise.id, mediaType, null, assetKey, null, source, license, attribution);
     }
     const plans: Array<[string, string, string, WorkoutDifficulty, string[]]> = [
       ["legs", "Leg strength basics", "A steady lower-body foundation.", "beginner", ["Bodyweight Squat", "Reverse Lunge", "Calf Raise"]],
@@ -120,7 +147,8 @@ export async function initializeWorkoutDatabase(db: SQLiteDatabase) {
 export async function getWorkoutCategories(db: SQLiteDatabase) { return db.getAllAsync<WorkoutCategory>("SELECT id,slug,name,description,icon,accent FROM workout_categories ORDER BY id"); }
 export async function getWorkoutPlans(db: SQLiteDatabase, categoryId: number) { return db.getAllAsync<WorkoutPlan>(`SELECT p.id,p.category_id,c.name category_name,p.name,p.description,p.difficulty,COALESCE(SUM(pe.duration_seconds + pe.rest_seconds),0) duration_seconds,COUNT(pe.id) exercise_count FROM workout_plans p JOIN workout_categories c ON c.id=p.category_id LEFT JOIN workout_plan_exercises pe ON pe.plan_id=p.id WHERE p.category_id=? GROUP BY p.id ORDER BY p.id`, categoryId); }
 export async function getWorkoutPlan(db: SQLiteDatabase, planId: number) { return db.getFirstAsync<WorkoutPlan>(`SELECT p.id,p.category_id,c.name category_name,p.name,p.description,p.difficulty,COALESCE(SUM(pe.duration_seconds + pe.rest_seconds),0) duration_seconds,COUNT(pe.id) exercise_count FROM workout_plans p JOIN workout_categories c ON c.id=p.category_id LEFT JOIN workout_plan_exercises pe ON pe.plan_id=p.id WHERE p.id=? GROUP BY p.id`, planId); }
-export async function getPlanExercises(db: SQLiteDatabase, planId: number) { return db.getAllAsync<WorkoutPlanExercise>(`SELECT pe.id plan_exercise_id,pe.exercise_order,pe.duration_seconds,pe.repetitions,pe.rest_seconds,e.id,e.name,e.description,e.instructions,e.equipment,e.image_uri FROM workout_plan_exercises pe JOIN exercises e ON e.id=pe.exercise_id WHERE pe.plan_id=? ORDER BY pe.exercise_order`, planId); }
+export async function getPlanExercises(db: SQLiteDatabase, planId: number) { return db.getAllAsync<WorkoutPlanExercise>(`SELECT pe.id plan_exercise_id,pe.exercise_order,pe.duration_seconds,pe.repetitions,pe.rest_seconds,e.id,e.name,e.description,e.instructions,e.equipment,e.image_uri,e.targeted_muscles FROM workout_plan_exercises pe JOIN exercises e ON e.id=pe.exercise_id WHERE pe.plan_id=? ORDER BY pe.exercise_order`, planId); }
+export async function getExerciseDetails(db: SQLiteDatabase, planExerciseId: number) { return db.getFirstAsync<ExerciseDetails>(`SELECT pe.id plan_exercise_id,p.id plan_id,pe.exercise_order,pe.duration_seconds,pe.repetitions,pe.rest_seconds,e.id,e.name,e.description,e.instructions,e.equipment,e.image_uri,e.targeted_muscles,p.difficulty plan_difficulty,em.media_type,em.source_uri media_source_uri,em.asset_key media_asset_key,em.poster_uri media_poster_uri,em.source media_source,em.license media_license,em.attribution media_attribution FROM workout_plan_exercises pe JOIN exercises e ON e.id=pe.exercise_id JOIN workout_plans p ON p.id=pe.plan_id LEFT JOIN exercise_media em ON em.exercise_id=e.id WHERE pe.id=?`, planExerciseId); }
 export async function createWorkoutSession(db: SQLiteDatabase, planId: number) { const timestamp = now(); let sessionId = 0; await db.withTransactionAsync(async () => { sessionId = (await db.runAsync("INSERT INTO workout_sessions (plan_id,started_at,status,created_at,updated_at) VALUES (?,?, 'active',?,?)", planId, timestamp, timestamp, timestamp)).lastInsertRowId; await db.runAsync("INSERT INTO workout_session_exercises (session_id,exercise_id,exercise_order,duration_seconds,rest_seconds,status) SELECT ?,exercise_id,exercise_order,duration_seconds,rest_seconds,'pending' FROM workout_plan_exercises WHERE plan_id=? ORDER BY exercise_order", sessionId, planId); }); return sessionId; }
 export async function getActiveWorkoutSession(db: SQLiteDatabase) { return db.getFirstAsync<WorkoutSession>(`SELECT s.id,s.plan_id,p.name plan_name,c.name category_name,s.started_at,s.finished_at,s.status,s.paused_seconds,s.total_rest_seconds FROM workout_sessions s JOIN workout_plans p ON p.id=s.plan_id JOIN workout_categories c ON c.id=p.category_id WHERE s.status='active' ORDER BY s.id DESC LIMIT 1`); }
 export async function getSessionExercises(db: SQLiteDatabase, sessionId: number) { return db.getAllAsync<WorkoutSessionExercise>(`SELECT se.id,se.session_id,se.exercise_id,e.name exercise_name,se.exercise_order,se.duration_seconds,se.rest_seconds,se.status,se.started_at,se.completed_at FROM workout_session_exercises se JOIN exercises e ON e.id=se.exercise_id WHERE se.session_id=? ORDER BY se.exercise_order`, sessionId); }

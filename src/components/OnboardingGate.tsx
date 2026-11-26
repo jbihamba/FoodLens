@@ -78,6 +78,7 @@ export function OnboardingGate() {
         <Stack.Screen name="onboarding" options={{ animation: "fade" }} />
         <Stack.Screen name="workouts" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="workout-plan" options={{ animation: "slide_from_right" }} />
+        <Stack.Screen name="exercise-details" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="active-workout" options={{ headerShown: false, gestureEnabled: false }} />
         <Stack.Screen name="workout-summary" options={{ animation: "slide_from_right" }} />
         <Stack.Screen name="workout-history" options={{ animation: "slide_from_right" }} />
@@ -93,6 +94,7 @@ export function OnboardingGate() {
         "/onboarding",
         "/workouts",
         "/workout-plan",
+        "/exercise-details",
         "/active-workout",
         "/workout-summary",
         "/workout-history",

@@ -1,5 +1,17 @@
 export type WorkoutDifficulty = "beginner" | "intermediate" | "advanced";
 export type ExerciseStatus = "pending" | "in_progress" | "completed" | "skipped";
+export type ExerciseMediaType = "image" | "gif" | "mp4";
+
+export interface ExerciseMedia {
+  exercise_id: number;
+  media_type: ExerciseMediaType;
+  source_uri: string | null;
+  asset_key: string | null;
+  poster_uri: string | null;
+  source: string | null;
+  license: string | null;
+  attribution: string | null;
+}
 
 export interface WorkoutCategory {
   id: number;
@@ -17,6 +29,7 @@ export interface Exercise {
   instructions: string;
   equipment: string | null;
   image_uri: string | null;
+  targeted_muscles: string;
 }
 
 export interface WorkoutPlan {
@@ -36,6 +49,18 @@ export interface WorkoutPlanExercise extends Exercise {
   duration_seconds: number;
   repetitions: number | null;
   rest_seconds: number;
+}
+
+export interface ExerciseDetails extends WorkoutPlanExercise {
+  plan_id: number;
+  plan_difficulty: WorkoutDifficulty;
+  media_type: ExerciseMediaType | null;
+  media_source_uri: string | null;
+  media_asset_key: string | null;
+  media_poster_uri: string | null;
+  media_source: string | null;
+  media_license: string | null;
+  media_attribution: string | null;
 }
 
 export interface WorkoutSession {
